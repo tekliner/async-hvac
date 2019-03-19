@@ -1,11 +1,11 @@
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Github
 from async_hvac.api.auth_methods.github import DEFAULT_MOUNT_POINT
+from tests.unit_tests import requests_mock
 
 
 class TestGithub(TestCase):
@@ -15,9 +15,9 @@ class TestGithub(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_configure(self, test_label, mount_point, requests_mocker):
+    async def test_configure(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -25,22 +25,23 @@ class TestGithub(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        github = Github(adapter=Request())
-        response = github.configure(
-            organization='hvac',
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.configure(
+                organization='hvac',
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_read_configuration(self, test_label, mount_point, requests_mocker):
+    async def test_read_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'auth': None,
@@ -57,7 +58,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -66,24 +67,25 @@ class TestGithub(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        github = Github(adapter=Request())
-        response = github.read_configuration(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.read_configuration(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_map_team(self, test_label, mount_point, requests_mocker):
+    async def test_map_team(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         team_name = 'hvac'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
             mount_point=mount_point,
             team_name=team_name,
         )
@@ -92,22 +94,23 @@ class TestGithub(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        github = Github(adapter=Request())
-        response = github.map_team(
-            team_name=team_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.map_team(
+                team_name=team_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_read_team_mapping(self, test_label, mount_point, requests_mocker):
+    async def test_read_team_mapping(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         team_name = 'hvac'
         mock_response = {
@@ -123,7 +126,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
             mount_point=mount_point,
             team_name=team_name,
         )
@@ -133,25 +136,26 @@ class TestGithub(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        github = Github(adapter=Request())
-        response = github.read_team_mapping(
-            team_name=team_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.read_team_mapping(
+                team_name=team_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_map_user(self, test_label, mount_point, requests_mocker):
+    async def test_map_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         user_name = 'hvac'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
             mount_point=mount_point,
             user_name=user_name,
         )
@@ -160,22 +164,23 @@ class TestGithub(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        github = Github(adapter=Request())
-        response = github.map_user(
-            user_name=user_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.map_user(
+                user_name=user_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_read_user_mapping(self, test_label, mount_point, requests_mocker):
+    async def test_read_user_mapping(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         user_name = 'hvac'
         mock_response = {
@@ -188,7 +193,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
             mount_point=mount_point,
             user_name=user_name,
         )
@@ -198,22 +203,23 @@ class TestGithub(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        github = Github(adapter=Request())
-        response = github.read_user_mapping(
-            user_name=user_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.read_user_mapping(
+                user_name=user_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_login(self, test_label, mount_point, requests_mocker):
+    async def test_login(self, test_label, mount_point, requests_mocker):
         mock_response = {
             'auth': {
                 'accessor': 'f578d442-94ec-11e8-afe4-0af6a65f93f6',
@@ -233,7 +239,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -241,16 +247,17 @@ class TestGithub(TestCase):
             url=mock_url,
             json=mock_response,
         )
-        github = Github(adapter=Request())
-        response = github.login(
-            token='valid-token',
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
-        self.assertEqual(
-            first=mock_response['auth']['client_token'],
-            second=github._adapter.token,
-        )
+        async with Request() as adapter:
+            github = Github(adapter=adapter)
+            response = await github.login(
+                token='valid-token',
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
+            self.assertEqual(
+                first=mock_response['auth']['client_token'],
+                second=github._adapter.token,
+            )

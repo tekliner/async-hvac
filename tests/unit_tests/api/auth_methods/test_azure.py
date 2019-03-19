@@ -7,7 +7,7 @@ from parameterized import parameterized
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Azure
 from tests import utils
-from tests.unit_tests import util
+from tests.unit_tests import requests_mock
 
 
 @skipIf(utils.vault_version_lt('0.10.0'), "Azure auth method not available before Vault version 0.10.0")
@@ -22,7 +22,7 @@ class TestAzure(TestCase):
         ('with vmss_name', dict(vmss_name='my_vmss_name'), None,),
         ('with vm_name and vmss_name', dict(vm_name='my_vm_name', vmss_name='my_vmss_name'), None,),
     ])
-    @util.RequestsMocker()
+    @requests_mock.Mocker()
     async def test_login(self, label, test_params, raises, requests_mocker):
         role_name = 'hvac'
         test_policies = [

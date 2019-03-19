@@ -6,7 +6,7 @@ from parameterized import parameterized
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Gcp
 from tests import utils
-from tests.unit_tests import util
+from tests.unit_tests import requests_mock
 
 
 class TestGcp(TestCase):
@@ -15,7 +15,7 @@ class TestGcp(TestCase):
     @parameterized.expand([
         ('success', dict(), None,),
     ])
-    @util.Mocker()
+    @requests_mock.Mocker()
     async def test_login(self, label, test_params, raises, requests_mocker):
         role_name = 'hvac'
         credentials = utils.load_config_file('example.jwt.json')
@@ -25,7 +25,7 @@ class TestGcp(TestCase):
             "prod",
         ]
         expected_status_code = 200
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login'.format(
             mount_point=self.TEST_MOUNT_POINT,
         )
         mock_response = {

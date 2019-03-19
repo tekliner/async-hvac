@@ -67,7 +67,7 @@ class Github(VaultApiBase):
             mount_point=mount_point,
         )
         response = await self._adapter.get(url=api_path)
-        return response.json()
+        return await response.json()
 
     def map_team(self, team_name, policies=None, mount_point=DEFAULT_MOUNT_POINT):
         """Map a list of policies to a team that exists in the configured GitHub organization.
@@ -126,7 +126,7 @@ class Github(VaultApiBase):
             team_name=team_name,
         )
         response = await self._adapter.get(url=api_path)
-        return response.json()
+        return await response.json()
 
     def map_user(self, user_name, policies=None, mount_point=DEFAULT_MOUNT_POINT):
         """Map a list of policies to a specific GitHub user exists in the configured organization.
@@ -186,7 +186,7 @@ class Github(VaultApiBase):
             user_name=user_name,
         )
         response = await self._adapter.get(url=api_path)
-        return response.json()
+        return await response.json()
 
     def login(self, token, use_token=True, mount_point=DEFAULT_MOUNT_POINT):
         """Login using GitHub access token.

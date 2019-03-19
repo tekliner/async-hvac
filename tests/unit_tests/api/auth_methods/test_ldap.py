@@ -1,11 +1,11 @@
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Ldap
 from async_hvac.api.auth_methods.ldap import DEFAULT_MOUNT_POINT
+from tests.unit_tests import requests_mock
 
 
 class TestLdap(TestCase):
@@ -15,9 +15,9 @@ class TestLdap(TestCase):
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_configure(self, test_label, mount_point, requests_mocker):
+    async def test_configure(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -25,24 +25,25 @@ class TestLdap(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.configure(
-            user_dn='dc=users,cn=hvac,cn=network',
-            group_dn='ou=groups,cn=hvac,cn=network',
-            url='ldaps://ldap.python-hvac.org',
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.configure(
+                user_dn='dc=users,cn=hvac,cn=network',
+                group_dn='ou=groups,cn=hvac,cn=network',
+                url='ldaps://ldap.python-hvac.org',
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status_code,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_read_configuration(self, test_label, mount_point, requests_mocker):
+    async def test_read_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'lease_id': '',
@@ -72,7 +73,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -81,24 +82,25 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.read_configuration(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.read_configuration(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_create_or_update_group(self, test_label, mount_point, requests_mocker):
+    async def test_create_or_update_group(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         group_name = 'hvac'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{group_name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{group_name}'.format(
             mount_point=mount_point,
             group_name=group_name,
         )
@@ -107,22 +109,23 @@ class TestLdap(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.create_or_update_group(
-            name=group_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.create_or_update_group(
+                name=group_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status_code,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_list_groups(self, test_label, mount_point, requests_mocker):
+    async def test_list_groups(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'lease_id': '',
@@ -136,7 +139,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -145,21 +148,22 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.list_groups(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.list_groups(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_read_group(self, test_label, mount_point, requests_mocker):
+    async def test_read_group(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         group_name = 'hvac'
         mock_response = {
@@ -174,7 +178,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{name}'.format(
             mount_point=mount_point,
             name=group_name,
         )
@@ -184,25 +188,26 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.read_group(
-            name=group_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.read_group(
+                name=group_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_delete_group(self, test_label, mount_point, requests_mocker):
+    async def test_delete_group(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         group_name = 'hvac'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{name}'.format(
             mount_point=mount_point,
             name=group_name,
         )
@@ -211,25 +216,26 @@ class TestLdap(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.delete_group(
-            name=group_name,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.delete_group(
+                name=group_name,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status_code,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_create_or_update_user(self, test_label, mount_point, requests_mocker):
+    async def test_create_or_update_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         username = 'somedude'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{name}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{name}'.format(
             mount_point=mount_point,
             name=username,
         )
@@ -238,22 +244,23 @@ class TestLdap(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.create_or_update_user(
-            username=username,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.create_or_update_user(
+                username=username,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status_code,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_list_users(self, test_label, mount_point, requests_mocker):
+    async def test_list_users(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'lease_id': '',
@@ -267,7 +274,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -276,21 +283,22 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.list_users(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.list_users(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_read_user(self, test_label, mount_point, requests_mocker):
+    async def test_read_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         username = 'somedude'
         mock_response = {
@@ -306,7 +314,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{username}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{username}'.format(
             mount_point=mount_point,
             username=username,
         )
@@ -316,25 +324,26 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.read_user(
-            mount_point=mount_point,
-            username=username,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.read_user(
+                mount_point=mount_point,
+                username=username,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_delete_user(self, test_label, mount_point, requests_mocker):
+    async def test_delete_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         username = 'somedude'
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{username}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{username}'.format(
             mount_point=mount_point,
             username=username,
         )
@@ -343,22 +352,23 @@ class TestLdap(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.delete_user(
-            username=username,
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.delete_user(
+                username=username,
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status_code,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
         ("custom mount point", 'other-ldap-tree'),
     ])
     @requests_mock.Mocker()
-    def test_login(self, test_label, mount_point, requests_mocker):
+    async def test_login(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         username = 'somedude'
         mock_response = {
@@ -382,7 +392,7 @@ class TestLdap(TestCase):
             'data': {},
             'renewable': False
         }
-        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login/{username}'.format(
+        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login/{username}'.format(
             mount_point=mount_point,
             username=username,
         )
@@ -392,13 +402,14 @@ class TestLdap(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        ldap = Ldap(adapter=Request())
-        response = ldap.login(
-            mount_point=mount_point,
-            username=username,
-            password='averynicepassword'
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            ldap = Ldap(adapter=adapter)
+            response = await ldap.login(
+                mount_point=mount_point,
+                username=username,
+                password='averynicepassword'
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
