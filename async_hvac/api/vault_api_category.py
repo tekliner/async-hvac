@@ -2,7 +2,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
-from hvac.api.vault_api_base import VaultApiBase
+from async_hvac.api.vault_api_base import VaultApiBase
 
 logger = logging.getLogger(__name__)
 
