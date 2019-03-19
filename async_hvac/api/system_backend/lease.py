@@ -3,7 +3,7 @@ from async_hvac.api.system_backend.system_backend_mixin import SystemBackendMixi
 
 class Lease(SystemBackendMixin):
 
-    def read_lease(self, lease_id):
+    async def read_lease(self, lease_id):
         """Retrieve lease metadata.
 
         Supported methods:
@@ -18,13 +18,13 @@ class Lease(SystemBackendMixin):
             'lease_id': lease_id
         }
         api_path = '/v1/sys/leases/lookup'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params
         )
-        return response.json()
+        return await response.json()
 
-    def list_leases(self, prefix):
+    async def list_leases(self, prefix):
         """Retrieve a list of lease ids.
 
         Supported methods:
@@ -36,12 +36,12 @@ class Lease(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/leases/lookup/{prefix}'.format(prefix=prefix)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def renew_lease(self, lease_id, increment=None):
+    async def renew_lease(self, lease_id, increment=None):
         """Renew a lease, requesting to extend the lease.
 
         Supported methods:
@@ -59,11 +59,11 @@ class Lease(SystemBackendMixin):
             'increment': increment,
         }
         api_path = '/v1/sys/leases/renew'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
     def revoke_lease(self, lease_id):
         """Revoke a lease immediately.

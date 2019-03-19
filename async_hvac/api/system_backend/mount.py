@@ -3,7 +3,7 @@ from async_hvac.api.system_backend.system_backend_mixin import SystemBackendMixi
 
 class Mount(SystemBackendMixin):
 
-    def list_mounted_secrets_engines(self):
+    async def list_mounted_secrets_engines(self):
         """Lists all the mounted secrets engines.
 
         Supported methods:
@@ -12,8 +12,8 @@ class Mount(SystemBackendMixin):
         :return: JSON response of the request.
         :rtype: dict
         """
-        response = self._adapter.get('/v1/sys/mounts')
-        return response.json()
+        response = await self._adapter.get('/v1/sys/mounts')
+        return await response.json()
 
     def enable_secrets_engine(self, backend_type, path=None, description=None, config=None, plugin_name=None,
                               options=None, local=False, seal_wrap=False):
@@ -92,7 +92,7 @@ class Mount(SystemBackendMixin):
             url=api_path,
         )
 
-    def read_mount_configuration(self, path):
+    async def read_mount_configuration(self, path):
         """Read the given mount's configuration.
 
         Unlike the mounts endpoint, this will return the current time in seconds for each TTL, which may be the system
@@ -107,10 +107,10 @@ class Mount(SystemBackendMixin):
         :rtype: requests.Response
         """
         api_path = '/v1/sys/mounts/{path}/tune'.format(path=path)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def tune_mount_configuration(self, path, default_lease_ttl=None, max_lease_ttl=None, description=None,
                                  audit_non_hmac_request_keys=None, audit_non_hmac_response_keys=None,

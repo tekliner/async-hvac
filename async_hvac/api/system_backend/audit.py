@@ -6,7 +6,7 @@ from async_hvac.api.system_backend.system_backend_mixin import SystemBackendMixi
 
 class Audit(SystemBackendMixin):
 
-    def list_enabled_audit_devices(self):
+    async def list_enabled_audit_devices(self):
         """List enabled audit devices.
 
         It does not list all available audit devices.
@@ -18,7 +18,7 @@ class Audit(SystemBackendMixin):
         :return: JSON response of the request.
         :rtype: dict
         """
-        list_audit_devices_response = self._adapter.get('/v1/sys/audit').json()
+        list_audit_devices_response = await (await self._adapter.get('/v1/sys/audit')).json()
         return list_audit_devices_response
 
     def enable_audit_device(self, device_type, description=None, options=None, path=None):
@@ -74,7 +74,7 @@ class Audit(SystemBackendMixin):
             url=api_path,
         )
 
-    def calculate_hash(self, path, input_to_hash):
+    async def calculate_hash(self, path, input_to_hash):
         """Hash the given input data with the specified audit device's hash function and salt.
 
         This endpoint can be used to discover whether a given plaintext string (the input parameter) appears in the
@@ -95,8 +95,8 @@ class Audit(SystemBackendMixin):
         }
 
         api_path = '/v1/sys/audit-hash/{path}'.format(path=path)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params
         )
-        return response.json()
+        return await response.json()

@@ -5,7 +5,7 @@ from async_hvac.api.system_backend.system_backend_mixin import SystemBackendMixi
 
 class Policy(SystemBackendMixin):
 
-    def list_policies(self):
+    async def list_policies(self):
         """List all configured policies.
 
         Supported methods:
@@ -15,12 +15,12 @@ class Policy(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/policy'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def read_policy(self, name):
+    async def read_policy(self, name):
         """Retrieve the policy body for the named policy.
 
         Supported methods:
@@ -32,10 +32,10 @@ class Policy(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/policy/{name}'.format(name=name)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def create_or_update_policy(self, name, policy, pretty_print=True):
         """Add a new or update an existing policy.

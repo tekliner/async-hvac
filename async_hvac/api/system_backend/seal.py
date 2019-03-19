@@ -3,16 +3,16 @@ from async_hvac.api.system_backend.system_backend_mixin import SystemBackendMixi
 
 class Seal(SystemBackendMixin):
 
-    def is_sealed(self):
+    async def is_sealed(self):
         """Determine if  Vault is sealed.
 
         :return: True if Vault is seal, False otherwise.
         :rtype: bool
         """
-        seal_status = self.read_seal_status()
+        seal_status = await self.read_seal_status()
         return seal_status['sealed']
 
-    def read_seal_status(self):
+    async def read_seal_status(self):
         """Read the seal status of the Vault.
 
         This is an unauthenticated endpoint.
@@ -24,10 +24,10 @@ class Seal(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/seal-status'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def seal(self):
         """Seal the Vault.
@@ -46,7 +46,7 @@ class Seal(SystemBackendMixin):
             url=api_path,
         )
 
-    def submit_unseal_key(self, key=None, reset=False, migrate=False):
+    async def submit_unseal_key(self, key=None, reset=False, migrate=False):
         """Enter a single master key share to progress the unsealing of the Vault.
 
         If the threshold number of master key shares is reached, Vault will attempt to unseal the Vault. Otherwise, this
@@ -77,11 +77,11 @@ class Seal(SystemBackendMixin):
             params['reset'] = reset
 
         api_path = '/v1/sys/unseal'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
     def submit_unseal_keys(self, keys, migrate=False):
         """Enter multiple master key share to progress the unsealing of the Vault.

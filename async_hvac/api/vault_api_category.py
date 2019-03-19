@@ -1,8 +1,8 @@
 """Base class used by all hvac api "category" classes."""
 import logging
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractmethod
 
-from async_hvac.api.vault_api_base import VaultApiBase
+from hvac.api.vault_api_base import VaultApiBase
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class VaultApiCategory(VaultApiBase):
             class_name = implemented_class.__name__.lower()
             getattr(self, self.get_private_attr_name(class_name)).adapter = adapter
 
-    @abstractproperty
+    @abstractmethod
     def implemented_classes(self):
         """List of implemented classes under this category.
 

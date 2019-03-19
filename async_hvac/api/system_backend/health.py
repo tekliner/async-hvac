@@ -11,7 +11,7 @@ class Health(SystemBackendMixin):
     Reference: https://www.vaultproject.io/api/system/index.html
     """
 
-    def read_health_status(self, standby_ok=False, active_code=200, standby_code=429, dr_secondary_code=472,
+    async def read_health_status(self, standby_ok=False, active_code=200, standby_code=429, dr_secondary_code=472,
                            performance_standby_code=473, sealed_code=503, uninit_code=501, method='HEAD'):
         """Read the health status of Vault.
 
@@ -55,19 +55,19 @@ class Health(SystemBackendMixin):
 
         if method == 'HEAD':
             api_path = '/v1/sys/health'.format()
-            response = self._adapter.head(
+            response = await self._adapter.head(
                 url=api_path,
                 raise_exception=False,
             )
             return response
         elif method == 'GET':
             api_path = '/v1/sys/health'.format()
-            response = self._adapter.get(
+            response = await self._adapter.get(
                 url=api_path,
                 json=params,
                 raise_exception=False,
             )
-            return response.json()
+            return await response.json()
         else:
             error_message = '"method" parameter provided invalid value; HEAD or GET allowed, "{method}" provided'.format(method=method)
             raise exceptions.ParamValidationError(error_message)

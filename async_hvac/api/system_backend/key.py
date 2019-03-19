@@ -4,7 +4,7 @@ from async_hvac.exceptions import ParamValidationError
 
 class Key(SystemBackendMixin):
 
-    def read_root_generation_progress(self):
+    async def read_root_generation_progress(self):
         """Read the configuration and process of the current root generation attempt.
 
         Supported methods:
@@ -14,12 +14,12 @@ class Key(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/generate-root/attempt'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def start_root_token_generation(self, otp=None, pgp_key=None):
+    async def start_root_token_generation(self, otp=None, pgp_key=None):
         """Initialize a new root generation attempt.
 
         Only a single root generation attempt can take place at a time. One (and only one) of otp or pgp_key are
@@ -46,13 +46,13 @@ class Key(SystemBackendMixin):
             params['pgp_key'] = pgp_key
 
         api_path = '/v1/sys/generate-root/attempt'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params
         )
-        return response.json()
+        return await response.json()
 
-    def generate_root(self, key, nonce):
+    async def generate_root(self, key, nonce):
         """Enter a single master key share to progress the root generation attempt.
 
         If the threshold number of master key shares is reached, Vault will complete the root generation and issue the
@@ -74,11 +74,11 @@ class Key(SystemBackendMixin):
             'nonce': nonce,
         }
         api_path = '/v1/sys/generate-root/update'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
     def cancel_root_generation(self):
         """Cancel any in-progress root generation attempt.
@@ -97,7 +97,7 @@ class Key(SystemBackendMixin):
         )
         return response
 
-    def get_encryption_key_status(self):
+    async def get_encryption_key_status(self):
         """Read information about the current encryption key used by Vault.
 
         Supported methods:
@@ -107,10 +107,10 @@ class Key(SystemBackendMixin):
         :rtype: dict
         """
         api_path = '/v1/sys/key-status'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def rotate_encryption_key(self):
         """Trigger a rotation of the backend encryption key.
@@ -133,7 +133,7 @@ class Key(SystemBackendMixin):
         )
         return response
 
-    def read_rekey_progress(self, recovery_key=False):
+    async def read_rekey_progress(self, recovery_key=False):
         """Read the configuration and progress of the current rekey attempt.
 
         Supported methods:
@@ -148,12 +148,12 @@ class Key(SystemBackendMixin):
         api_path = '/v1/sys/rekey/init'
         if recovery_key:
             api_path = '/v1/sys/rekey-recovery-key/init'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def start_rekey(self, secret_shares=5, secret_threshold=3, pgp_keys=None, backup=False, require_verification=False, recovery_key=False):
+    async def start_rekey(self, secret_shares=5, secret_threshold=3, pgp_keys=None, backup=False, require_verification=False, recovery_key=False):
         """Initializes a new rekey attempt.
 
         Only a single recovery key rekeyattempt can take place at a time, and changing the parameters of a rekey
@@ -205,12 +205,12 @@ class Key(SystemBackendMixin):
         api_path = '/v1/sys/rekey/init'
         if recovery_key:
             api_path = '/v1/sys/rekey-recovery-key/init'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params,
         )
 
-        return response.json()
+        return await response.json()
 
     def cancel_rekey(self, recovery_key=False):
         """Cancel any in-progress rekey.
@@ -238,7 +238,7 @@ class Key(SystemBackendMixin):
         )
         return response
 
-    def rekey(self, key, nonce=None, recovery_key=False):
+    async def rekey(self, key, nonce=None, recovery_key=False):
         """Enter a single recovery key share to progress the rekey of the Vault.
 
         If the threshold number of recovery key shares is reached, Vault will complete the rekey. Otherwise, this API
@@ -268,13 +268,13 @@ class Key(SystemBackendMixin):
         api_path = '/v1/sys/rekey/update'
         if recovery_key:
             api_path = '/v1/sys/rekey-recovery-key/update'
-        response = self._adapter.put(
+        response = await self._adapter.put(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def rekey_multi(self, keys, nonce=None, recovery_key=False):
+    async def rekey_multi(self, keys, nonce=None, recovery_key=False):
         """Enter multiple recovery key shares to progress the rekey of the Vault.
 
         If the threshold number of recovery key shares is reached, Vault will complete the rekey.
@@ -291,7 +291,7 @@ class Key(SystemBackendMixin):
         result = None
 
         for key in keys:
-            result = self.rekey(
+            result = await self.rekey(
                 key=key,
                 nonce=nonce,
                 recovery_key=recovery_key,
@@ -301,7 +301,7 @@ class Key(SystemBackendMixin):
 
         return result
 
-    def read_backup_keys(self, recovery_key=False):
+    async def read_backup_keys(self, recovery_key=False):
         """Retrieve the backup copy of PGP-encrypted unseal keys.
 
         The returned value is the nonce of the rekey operation and a map of PGP key fingerprint to hex-encoded
@@ -319,7 +319,7 @@ class Key(SystemBackendMixin):
         api_path = '/v1/sys/rekey/backup'
         if recovery_key:
             api_path = '/v1/sys/rekey-recovery-key/backup'
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
