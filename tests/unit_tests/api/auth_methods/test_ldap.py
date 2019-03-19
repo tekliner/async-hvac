@@ -35,7 +35,7 @@ class TestLdap(TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code,
+                second=response.status,
             )
 
     @parameterized.expand([
@@ -117,7 +117,7 @@ class TestLdap(TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code,
+                second=response.status,
             )
 
     @parameterized.expand([
@@ -224,7 +224,7 @@ class TestLdap(TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code,
+                second=response.status,
             )
 
     @parameterized.expand([
@@ -252,7 +252,7 @@ class TestLdap(TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code,
+                second=response.status,
             )
 
     @parameterized.expand([
@@ -360,7 +360,7 @@ class TestLdap(TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code,
+                second=response.status,
             )
 
     @parameterized.expand([

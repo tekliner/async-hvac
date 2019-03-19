@@ -25,14 +25,15 @@ class TestMfa(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        mfa = Mfa(adapter=Request())
-        response = mfa.configure(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            mfa = Mfa(adapter=adapter)
+            response = await mfa.configure(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
@@ -61,14 +62,15 @@ class TestMfa(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        mfa = Mfa(adapter=Request())
-        response = mfa.read_configuration(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            mfa = Mfa(adapter=adapter)
+            response = await mfa.read_configuration(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
@@ -85,17 +87,18 @@ class TestMfa(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        mfa = Mfa(adapter=Request())
-        response = mfa.configure_duo_access(
-            mount_point=mount_point,
-            host='someapisubdomain.python-hvac.org',
-            integration_key='ikey',
-            secret_key='supersecret',
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            mfa = Mfa(adapter=adapter)
+            response = await mfa.configure_duo_access(
+                mount_point=mount_point,
+                host='someapisubdomain.python-hvac.org',
+                integration_key='ikey',
+                secret_key='supersecret',
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
@@ -112,15 +115,16 @@ class TestMfa(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        mfa = Mfa(adapter=Request())
-        response = mfa.configure_duo_behavior(
-            mount_point=mount_point,
-            push_info='howdy'
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+        async with Request() as adapter:
+            mfa = Mfa(adapter=adapter)
+            response = await mfa.configure_duo_behavior(
+                mount_point=mount_point,
+                push_info='howdy'
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", DEFAULT_MOUNT_POINT),
@@ -153,11 +157,12 @@ class TestMfa(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        mfa = Mfa(adapter=Request())
-        response = mfa.read_duo_behavior_configuration(
-            mount_point=mount_point,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response,
-        )
+        async with Request() as adapter:
+            mfa = Mfa(adapter=adapter)
+            response = await mfa.read_duo_behavior_configuration(
+                mount_point=mount_point,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=response,
+            )

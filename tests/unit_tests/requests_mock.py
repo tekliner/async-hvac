@@ -13,7 +13,7 @@ class Mocker(aioresponses):
             json = json_util.dumps(json)
         else:
             json = ''
-        if method == 'GET':
+        if method in ['GET', 'LIST']:
             self.get(url=url, status=status_code, body=json)
         if method == 'POST':
             self.post(url=url, status=status_code, body=json)

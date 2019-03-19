@@ -141,7 +141,7 @@ class Adapter(object):
         :return: The response of the request.
         :rtype: requests.Response
         """
-        return self.request('list', url, **kwargs)
+        return self.request('get', url, **kwargs)
 
     def head(self, url, **kwargs):
         """Performs a HEAD request.

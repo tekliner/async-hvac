@@ -80,7 +80,7 @@ class Mfa(VaultApiBase):
             mount_point=mount_point,
         )
         response = await self._adapter.get(url=api_path)
-        return response.json()
+        return await response.json()
 
     def configure_duo_access(self, mount_point, host, integration_key, secret_key):
         """Configure the access keys and host for Duo API connections.
@@ -169,4 +169,4 @@ class Mfa(VaultApiBase):
             mount_point=mount_point,
         )
         response = await self._adapter.get(url=api_path)
-        return response.json()
+        return await response.json()

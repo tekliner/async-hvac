@@ -1,11 +1,11 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Okta
+from tests.unit_tests import requests_mock
 
 
 class TestOkta(TestCase):
@@ -16,7 +16,7 @@ class TestOkta(TestCase):
         ('success', dict(), None,),
     ])
     @requests_mock.Mocker()
-    def test_login(self, label, test_params, raises, requests_mocker):
+    async def test_login(self, label, test_params, raises, requests_mocker):
         test_policies = [
             "default",
         ]
@@ -47,24 +47,25 @@ class TestOkta(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        okta = Okta(adapter=Request())
-        if raises is not None:
-            with self.assertRaises(raises):
-                okta.login(
-                    username=self.TEST_USERNAME,
-                    password='badpassword',
-                    mount_point=self.TEST_MOUNT_POINT,
-                    **test_params
+        async with Request() as adapter:
+            okta = Okta(adapter=adapter)
+            if raises is not None:
+                with self.assertRaises(raises):
+                    await okta.login(
+                        username=self.TEST_USERNAME,
+                        password='badpassword',
+                        mount_point=self.TEST_MOUNT_POINT,
+                        **test_params
+                    )
+            else:
+                login_response = await okta.login(
+                        username=self.TEST_USERNAME,
+                        password='badpassword',
+                        mount_point=self.TEST_MOUNT_POINT,
+                        **test_params
                 )
-        else:
-            login_response = okta.login(
-                    username=self.TEST_USERNAME,
-                    password='badpassword',
-                    mount_point=self.TEST_MOUNT_POINT,
-                    **test_params
-            )
-            logging.debug('login_response: %s' % login_response)
-            self.assertEqual(
-                first=login_response['auth']['policies'],
-                second=test_policies,
-            )
+                logging.debug('login_response: %s' % login_response)
+                self.assertEqual(
+                    first=login_response['auth']['policies'],
+                    second=test_policies,
+                )
