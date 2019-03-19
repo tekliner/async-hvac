@@ -15,7 +15,7 @@ class TestAuthMethods(TestCase):
         test_description = 'this is a test description'
         requests_mocker.register_uri(
             method='POST',
-            url='http://127.0.0.1:8200/v1/sys/auth/{0}/tune'.format(test_mount_point),
+            url='http://localhost:8200/v1/sys/auth/{0}/tune'.format(test_mount_point),
             status_code=expected_status_code,
         )
         client = AsyncClient()
@@ -31,7 +31,7 @@ class TestAuthMethods(TestCase):
         )
 
         actual_request_params = requests_mocker.requests[
-            ('post', 'http://127.0.0.1:8200/v1/sys/auth/{0}/tune'.format(test_mount_point))][0].kwargs['json']
+            ('post', 'http://localhost:8200/v1/sys/auth/{0}/tune'.format(test_mount_point))][0].kwargs['json']
 
         # Ensure we sent through an optional tune parameter as expected
         self.assertEqual(
@@ -64,7 +64,7 @@ class TestAuthMethods(TestCase):
         }
         requests_mocker.register_uri(
             method='GET',
-            url='http://127.0.0.1:8200/v1/sys/auth/{0}/tune'.format(test_mount_point),
+            url='http://localhost:8200/v1/sys/auth/{0}/tune'.format(test_mount_point),
             status_code=expected_status_code,
             json=mock_response
         )

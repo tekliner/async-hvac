@@ -18,7 +18,7 @@ except ImportError:
 class AsyncClient(object):
     """The Async hvac Client class for HashiCorp's Vault."""
 
-    def __init__(self, url='http://127.0.0.1:8200', token=None,
+    def __init__(self, url='http://localhost:8200', token=None,
                  cert=None, verify=True, timeout=30, proxies=None,
                  allow_redirects=True, session=None, adapter=None, namespace=None,
                  loop=None):

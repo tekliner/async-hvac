@@ -1,11 +1,11 @@
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Mfa
 from async_hvac.api.auth_methods.github import DEFAULT_MOUNT_POINT
+from tests.unit_tests import requests_mock
 
 
 class TestMfa(TestCase):
@@ -15,7 +15,7 @@ class TestMfa(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_configure(self, test_label, mount_point, requests_mocker):
+    async def test_configure(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{mount_point}/mfa_config'.format(
             mount_point=mount_point,
@@ -39,7 +39,7 @@ class TestMfa(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_read_configuration(self, test_label, mount_point, requests_mocker):
+    async def test_read_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'lease_id': '',
@@ -75,7 +75,7 @@ class TestMfa(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_configure_duo_access(self, test_label, mount_point, requests_mocker):
+    async def test_configure_duo_access(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{mount_point}/duo/access'.format(
             mount_point=mount_point,
@@ -102,7 +102,7 @@ class TestMfa(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_configure_duo_behavior(self, test_label, mount_point, requests_mocker):
+    async def test_configure_duo_behavior(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{mount_point}/duo/config'.format(
             mount_point=mount_point,
@@ -127,7 +127,7 @@ class TestMfa(TestCase):
         ("custom mount point", 'cathub'),
     ])
     @requests_mock.Mocker()
-    def test_read_duo_behvaior_configuration(self, test_label, mount_point, requests_mocker):
+    async def test_read_duo_behvaior_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'lease_id': '',

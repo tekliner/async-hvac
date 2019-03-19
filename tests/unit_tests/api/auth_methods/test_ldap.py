@@ -17,7 +17,7 @@ class TestLdap(TestCase):
     @requests_mock.Mocker()
     async def test_configure(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -73,7 +73,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -100,7 +100,7 @@ class TestLdap(TestCase):
     async def test_create_or_update_group(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         group_name = 'hvac'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{group_name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{group_name}'.format(
             mount_point=mount_point,
             group_name=group_name,
         )
@@ -139,7 +139,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -178,7 +178,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{name}'.format(
             mount_point=mount_point,
             name=group_name,
         )
@@ -207,7 +207,7 @@ class TestLdap(TestCase):
     async def test_delete_group(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         group_name = 'hvac'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/groups/{name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/groups/{name}'.format(
             mount_point=mount_point,
             name=group_name,
         )
@@ -235,7 +235,7 @@ class TestLdap(TestCase):
     async def test_create_or_update_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         username = 'somedude'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{name}'.format(
             mount_point=mount_point,
             name=username,
         )
@@ -274,7 +274,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -314,7 +314,7 @@ class TestLdap(TestCase):
             },
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{username}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{username}'.format(
             mount_point=mount_point,
             username=username,
         )
@@ -343,7 +343,7 @@ class TestLdap(TestCase):
     async def test_delete_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         username = 'somedude'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/users/{username}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/users/{username}'.format(
             mount_point=mount_point,
             username=username,
         )
@@ -392,7 +392,7 @@ class TestLdap(TestCase):
             'data': {},
             'renewable': False
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login/{username}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login/{username}'.format(
             mount_point=mount_point,
             username=username,
         )

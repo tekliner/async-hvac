@@ -16,7 +16,7 @@ class TestApproleRoutes(TestCase):
     @RequestsMocker()
     async def test_create_role(self, test_label, mount_point, role_name, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -63,7 +63,7 @@ class TestApproleRoutes(TestCase):
             "warnings": None,
             "wrap_info": None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role?list=true'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role?list=true'.format(
             'approle' if mount_point is None else mount_point,
         )
         requests_mocker.register_uri(
@@ -103,7 +103,7 @@ class TestApproleRoutes(TestCase):
             "warnings": None,
             "wrap_info": None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/role-id'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/role-id'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -138,7 +138,7 @@ class TestApproleRoutes(TestCase):
     @RequestsMocker()
     async def test_set_role_id(self, test_label, mount_point, role_name, role_id, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/role-id'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/role-id'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -195,7 +195,7 @@ class TestApproleRoutes(TestCase):
             "warnings": None,
             "wrap_info": None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -243,7 +243,7 @@ class TestApproleRoutes(TestCase):
             "wrap_info": None
         }
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -297,7 +297,7 @@ class TestApproleRoutes(TestCase):
             "wrap_info": None
         }
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id/lookup'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id/lookup'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -348,7 +348,7 @@ class TestApproleRoutes(TestCase):
             "wrap_info": None
         }
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id?list=true'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id?list=true'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -402,7 +402,7 @@ class TestApproleRoutes(TestCase):
             "wrap_info": None
         }
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id-accessor/lookup'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id-accessor/lookup'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -439,7 +439,7 @@ class TestApproleRoutes(TestCase):
     async def test_delete_role_secret_id(self, test_label, mount_point, role_name, secret_id, requests_mocker):
         expected_status_code = 204
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id/destroy'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id/destroy'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -475,7 +475,7 @@ class TestApproleRoutes(TestCase):
     async def test_delete_role_secret_id_accessor(self, test_label, mount_point, role_name, secret_id_accessor, requests_mocker):
         expected_status_code = 204
 
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/secret-id-accessor/{2}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/secret-id-accessor/{2}'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
             secret_id_accessor,
@@ -524,7 +524,7 @@ class TestApproleRoutes(TestCase):
             "warnings": None,
             "wrap_info": None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/role/{1}/custom-secret-id'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}/custom-secret-id'.format(
             'approle' if mount_point is None else mount_point,
             role_name,
         )
@@ -581,7 +581,7 @@ class TestApproleRoutes(TestCase):
             "warnings": None,
             "wrap_info": None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{0}/login'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{0}/login'.format(
             'approle' if mount_point is None else mount_point,
         )
         requests_mocker.register_uri(

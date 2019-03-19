@@ -139,8 +139,8 @@ class HvacIntegrationTestCase(object):
         )
         self.client.write(
             path='{path}/config/urls'.format(path=mount_point),
-            issuing_certificates="http://127.0.0.1:8200/v1/pki/ca",
-            crl_distribution_points="http://127.0.0.1:8200/v1/pki/crl",
+            issuing_certificates="http://localhost:8200/v1/pki/ca",
+            crl_distribution_points="http://localhost:8200/v1/pki/crl",
         )
         self.client.write(
             path='{path}/roles/{name}'.format(path=mount_point, name=role_name),

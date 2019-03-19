@@ -66,12 +66,12 @@ class ServerManager(object):
         last_exception = None
         while attempts_left > 0:
             try:
-                catalog_nodes_response = requests.get('http://127.0.0.1:8500/v1/catalog/nodes')
+                catalog_nodes_response = requests.get('http://localhost:8500/v1/catalog/nodes')
                 nodes_list = catalog_nodes_response.json()
                 logging.debug('JSON response from request to consul/v1/catalog/noses: {resp}'.format(resp=nodes_list))
                 node_name = nodes_list[0]['Node']
                 logging.debug('Current consul node name: {name}'.format(name=node_name))
-                node_health_response = requests.get('http://127.0.0.1:8500/v1/health/node/{name}'.format(name=node_name))
+                node_health_response = requests.get('http://localhost:8500/v1/health/node/{name}'.format(name=node_name))
                 node_health = node_health_response.json()
                 logging.debug('Node health response: {resp}'.format(resp=node_health))
                 assert node_health[0]['Status'] == 'passing', 'Node {name} status != "passing"'.format(name=node_name)
@@ -120,7 +120,7 @@ class ServerManager(object):
                     path=config_path,
                     err=error,
                 ))
-                vault_address = 'https://127.0.0.1:8200'
+                vault_address = 'https://localhost:8200'
                 logger.debug('Using default address: {addr}'.format(addr=vault_address))
             vault_addresses.append(vault_address)
         return vault_addresses

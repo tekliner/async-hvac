@@ -13,13 +13,13 @@ loop = asyncio.get_event_loop()
 
 def create_client(sync=False, **kwargs):
     if sync:
-        return Client(url='https://127.0.0.1:8200',
+        return Client(url='https://localhost:8200',
                       cert=('test/client-cert.pem', 'test/client-key.pem'),
                       verify='test/server-cert.pem',
                       loop=IntegrationTest.loop,
                       **kwargs)
     else:
-        return AsyncClient(url='https://127.0.0.1:8200',
+        return AsyncClient(url='https://localhost:8200',
                            cert=('test/client-cert.pem', 'test/client-key.pem'),
                            verify='test/server-cert.pem',
                            loop=IntegrationTest.loop,
@@ -54,7 +54,7 @@ class IntegrationTest(asynctest.TestCase):
     async def test_verifiy_false(self):
         await self.client.close()
         self.client = AsyncClient(
-            url='https://127.0.0.1:8200', verify=False, loop=IntegrationTest.loop)
+            url='https://localhost:8200', verify=False, loop=IntegrationTest.loop)
         assert 'ha_enabled' in (await self.client.ha_status)
 
     async def test_unseal_multi(self):
@@ -1356,7 +1356,7 @@ class IntegrationTest(asynctest.TestCase):
         with open('test/client-cert.pem') as fp:
             certificate = fp.read()
             response = await self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1369,7 +1369,7 @@ class IntegrationTest(asynctest.TestCase):
         await self.client.disable_auth_backend(mount_point=test_mount_point)
 
     async def test_get_kubernetes_configuration(self):
-        test_host = '127.0.0.1:80'
+        test_host = 'localhost:80'
         test_mount_point = 'k8s'
 
         # Turn on the kubernetes backend with a custom mount_point path specified.
@@ -1413,7 +1413,7 @@ class IntegrationTest(asynctest.TestCase):
         with open('test/client-cert.pem') as fp:
             certificate = fp.read()
             await self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1446,7 +1446,7 @@ class IntegrationTest(asynctest.TestCase):
         with open('test/client-cert.pem') as fp:
             certificate = fp.read()
             await self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1486,7 +1486,7 @@ class IntegrationTest(asynctest.TestCase):
         with open('test/client-cert.pem') as fp:
             certificate = fp.read()
             await self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1525,7 +1525,7 @@ class IntegrationTest(asynctest.TestCase):
         with open('test/client-cert.pem') as fp:
             certificate = fp.read()
             await self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1551,7 +1551,7 @@ class IntegrationTest(asynctest.TestCase):
 
     async def test_auth_kubernetes(self):
         test_role_name = 'test_role'
-        test_host = '127.0.0.1:80'
+        test_host = 'localhost:80'
         test_mount_point = 'k8s'
 
         # Turn on the kubernetes backend with a custom mount_point path specified.

@@ -14,7 +14,7 @@ class Ldap(VaultApiBase):
     Reference: https://www.vaultproject.io/api/auth/ldap/index.html
     """
 
-    def configure(self, user_dn, group_dn, url='ldap://127.0.0.1', case_sensitive_names=False, starttls=False,
+    def configure(self, user_dn, group_dn, url='ldap://localhost', case_sensitive_names=False, starttls=False,
                   tls_min_version='tls12', tls_max_version='tls12', insecure_tls=False, certificate=None, bind_dn=None,
                   bind_pass=None, user_attr='cn', discover_dn=False, deny_null_bind=True, upn_domain=None,
                   group_filter=DEFAULT_GROUP_FILTER, group_attr='cn', mount_point=DEFAULT_MOUNT_POINT):

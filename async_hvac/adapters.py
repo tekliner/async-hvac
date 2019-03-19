@@ -12,7 +12,7 @@ from async_hvac import exceptions, utils
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BASE_URI = 'http://127.0.0.1:8200'
+DEFAULT_BASE_URI = 'http://localhost:8200'
 
 
 class Adapter(object):

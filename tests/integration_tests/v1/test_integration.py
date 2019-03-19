@@ -835,7 +835,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         with open(utils.get_config_file_path('client-cert.pem')) as fp:
             certificate = fp.read()
             response = self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -848,7 +848,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         self.client.disable_auth_backend(mount_point=test_mount_point)
 
     def test_get_kubernetes_configuration(self):
-        test_host = '127.0.0.1:80'
+        test_host = 'localhost:80'
         test_mount_point = 'k8s'
 
         # Turn on the kubernetes backend with a custom mount_point path specified.
@@ -892,7 +892,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         with open(utils.get_config_file_path('client-cert.pem')) as fp:
             certificate = fp.read()
             self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -925,7 +925,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         with open(utils.get_config_file_path('client-cert.pem')) as fp:
             certificate = fp.read()
             self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -965,7 +965,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         with open(utils.get_config_file_path('client-cert.pem')) as fp:
             certificate = fp.read()
             self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1004,7 +1004,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
         with open(utils.get_config_file_path('client-cert.pem')) as fp:
             certificate = fp.read()
             self.client.create_kubernetes_configuration(
-                kubernetes_host='127.0.0.1:80',
+                kubernetes_host='localhost:80',
                 pem_keys=[certificate],
                 mount_point=test_mount_point,
             )
@@ -1030,7 +1030,7 @@ class IntegrationTest(HvacIntegrationTestCase, TestCase):
 
     def test_auth_kubernetes(self):
         test_role_name = 'test_role'
-        test_host = '127.0.0.1:80'
+        test_host = 'localhost:80'
         test_mount_point = 'k8s'
 
         # Turn on the kubernetes backend with a custom mount_point path specified.

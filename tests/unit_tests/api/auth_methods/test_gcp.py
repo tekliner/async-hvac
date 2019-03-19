@@ -25,7 +25,7 @@ class TestGcp(TestCase):
             "prod",
         ]
         expected_status_code = 200
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login'.format(
             mount_point=self.TEST_MOUNT_POINT,
         )
         mock_response = {

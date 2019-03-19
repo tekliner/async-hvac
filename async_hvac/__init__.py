@@ -19,7 +19,7 @@ def async_to_sync(self, f):
 # Just for test and try and do not work properly in some cases... not part of the Async API
 class Client(AsyncClient):
 
-    def __init__(self, url='http://127.0.0.1:8200', token=None,
+    def __init__(self, url='http://localhost:8200', token=None,
                  cert=None, verify=True, timeout=30, proxies=None,
                  allow_redirects=True, session=None, sync=True,
                  loop=None):

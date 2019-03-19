@@ -143,7 +143,7 @@ def decode_generated_root_token(encoded_token, otp):
     command.extend(
         [
             'generate-root',
-            '-address', 'https://127.0.0.1:8200',
+            '-address', 'https://localhost:8200',
             '-tls-skip-verify',
             '-decode', encoded_token,
             '-otp', otp,

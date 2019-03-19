@@ -17,7 +17,7 @@ class TestGithub(TestCase):
     @requests_mock.Mocker()
     async def test_configure(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -58,7 +58,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/config'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/config'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
@@ -85,7 +85,7 @@ class TestGithub(TestCase):
     async def test_map_team(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         team_name = 'hvac'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
             mount_point=mount_point,
             team_name=team_name,
         )
@@ -126,7 +126,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/teams/{team_name}'.format(
             mount_point=mount_point,
             team_name=team_name,
         )
@@ -155,7 +155,7 @@ class TestGithub(TestCase):
     async def test_map_user(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         user_name = 'hvac'
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
             mount_point=mount_point,
             user_name=user_name,
         )
@@ -193,7 +193,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/map/users/{user_name}'.format(
             mount_point=mount_point,
             user_name=user_name,
         )
@@ -239,7 +239,7 @@ class TestGithub(TestCase):
             'warnings': None,
             'wrap_info': None
         }
-        mock_url = 'http://127.0.0.1:8200/v1/auth/{mount_point}/login'.format(
+        mock_url = 'http://localhost:8200/v1/auth/{mount_point}/login'.format(
             mount_point=mount_point,
         )
         requests_mocker.register_uri(
