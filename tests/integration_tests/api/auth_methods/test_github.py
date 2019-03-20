@@ -1,5 +1,6 @@
+import traceback
 from threading import Thread
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized
 
@@ -8,12 +9,7 @@ from tests import utils
 from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 from tests.utils.mock_github_request_handler import MockGithubRequestHandler
 
-try:
-    # Python 2.7
-    from http.server import HTTPServer
-except ImportError:
-    # Python 3.x
-    from BaseHTTPServer import HTTPServer
+from http.server import HTTPServer
 
 
 class TestGithub(HvacIntegrationTestCase, TestCase):
@@ -32,24 +28,25 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         cls.mock_server_thread.setDaemon(True)
         cls.mock_server_thread.start()
 
-    def setUp(self):
-        super(TestGithub, self).setUp()
-        self.client.sys.enable_auth_method(
+    async def setUp(self):
+        await super(TestGithub, self).setUp()
+        await self.client.sys.enable_auth_method(
             method_type='github',
             path=self.TEST_GITHUB_PATH,
         )
 
-    def tearDown(self):
-        super(TestGithub, self).tearDown()
-        self.client.sys.disable_auth_method(
+    async def tearDown(self):
+        await super(TestGithub, self).tearDown()
+        await self.client.sys.disable_auth_method(
             path=self.TEST_GITHUB_PATH,
         )
+        await self.client.close()
 
     @parameterized.expand([
         ("just organization", 204, 'some-test-org', '', 0, 0, TEST_GITHUB_PATH),
     ])
-    def test_configure(self, test_label, expected_status_code, organization, base_url, ttl, max_ttl, mount_point):
-        response = self.client.auth.github.configure(
+    async def test_configure(self, test_label, expected_status_code, organization, base_url, ttl, max_ttl, mount_point):
+        response = await self.client.auth.github.configure(
             organization=organization,
             base_url=base_url,
             ttl=ttl,
@@ -58,11 +55,11 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         )
         self.assertEqual(
             first=expected_status_code,
-            second=response.status_code
+            second=response.status
         )
 
-    def test_read_configuration(self):
-        response = self.client.auth.github.read_configuration(
+    async def test_read_configuration(self):
+        response = await self.client.auth.github.read_configuration(
             mount_point=self.TEST_GITHUB_PATH,
         )
         self.assertIn(
@@ -78,8 +75,8 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("custom ttl hours", 'some-test-org', '', '500h', ''),
         ("custom max ttl", 'some-test-org', '', '', '500s'),
     ])
-    def test_configure_and_read_configuration(self, test_label, organization, base_url, ttl, max_ttl):
-        config_response = self.client.auth.github.configure(
+    async def test_configure_and_read_configuration(self, test_label, organization, base_url, ttl, max_ttl):
+        config_response = await self.client.auth.github.configure(
             organization=organization,
             base_url=base_url,
             ttl=ttl,
@@ -88,10 +85,10 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         )
         self.assertEqual(
             first=204,
-            second=config_response.status_code
+            second=config_response.status
         )
 
-        read_config_response = self.client.auth.github.read_configuration(
+        read_config_response = await self.client.auth.github.read_configuration(
             mount_point=self.TEST_GITHUB_PATH,
         )
         self.assertEqual(
@@ -115,19 +112,19 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("no policies", 204, 'hvac', None),
         ("with policies", 204, 'hvac', ['default']),
     ])
-    def test_map_team(self, test_label, expected_status_code, team_name, policies):
-        response = self.client.auth.github.map_team(
+    async def test_map_team(self, test_label, expected_status_code, team_name, policies):
+        response = await self.client.auth.github.map_team(
             team_name=team_name,
             policies=policies,
             mount_point=self.TEST_GITHUB_PATH,
         )
         self.assertEqual(
             first=expected_status_code,
-            second=response.status_code
+            second=response.status
         )
 
-    def test_read_team_mapping(self):
-        response = self.client.auth.github.read_team_mapping(
+    async def test_read_team_mapping(self):
+        response = await self.client.auth.github.read_team_mapping(
             team_name='hvac',
             mount_point=self.TEST_GITHUB_PATH,
         )
@@ -142,11 +139,11 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("with policy incorrect type", 204, 'hvac', 'default, root', exceptions.ParamValidationError, "unsupported policies argument provided"),
         ("with policies", 204, 'hvac', ['default', 'root']),
     ])
-    def test_map_team_and_read_mapping(self, test_label, expected_status_code, team_name, policies, raises=False, exception_msg=''):
+    async def test_map_team_and_read_mapping(self, test_label, expected_status_code, team_name, policies, raises=False, exception_msg=''):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.github.map_team(
+                await self.client.auth.github.map_team(
                     team_name=team_name,
                     policies=policies,
                     mount_point=self.TEST_GITHUB_PATH,
@@ -156,17 +153,17 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            response = self.client.auth.github.map_team(
+            response = await self.client.auth.github.map_team(
                 team_name=team_name,
                 policies=policies,
                 mount_point=self.TEST_GITHUB_PATH,
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code
+                second=response.status
             )
 
-            response = self.client.auth.github.read_team_mapping(
+            response = await self.client.auth.github.read_team_mapping(
                 team_name=team_name,
                 mount_point=self.TEST_GITHUB_PATH,
             )
@@ -184,19 +181,19 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("no policies", 204, 'hvac-user', None),
         ("with policies", 204, 'hvac-user', ['default']),
     ])
-    def teat_map_user(self, test_label, expected_status_code, user_name, policies):
-        response = self.client.auth.github.map_user(
+    async def teat_map_user(self, test_label, expected_status_code, user_name, policies):
+        response = await self.client.auth.github.map_user(
             user_name=user_name,
             policies=policies,
             mount_point=self.TEST_GITHUB_PATH,
         )
         self.assertEqual(
             first=expected_status_code,
-            second=response.status_code
+            second=response.status
         )
 
-    def test_read_user_mapping(self):
-        response = self.client.auth.github.read_user_mapping(
+    async def test_read_user_mapping(self):
+        response = await self.client.auth.github.read_user_mapping(
             user_name='hvac',
             mount_point=self.TEST_GITHUB_PATH,
         )
@@ -211,11 +208,11 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("with policy incorrect type", 204, 'hvac', 'default, root', exceptions.ParamValidationError, "unsupported policies argument provided"),
         ("with policies", 204, 'hvac', ['default', 'root']),
     ])
-    def test_map_user_and_read_mapping(self, test_label, expected_status_code, user_name, policies, raises=False, exception_msg=''):
+    async def test_map_user_and_read_mapping(self, test_label, expected_status_code, user_name, policies, raises=False, exception_msg=''):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.github.map_user(
+                await self.client.auth.github.map_user(
                     user_name=user_name,
                     policies=policies,
                     mount_point=self.TEST_GITHUB_PATH,
@@ -225,17 +222,17 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            response = self.client.auth.github.map_user(
+            response = await self.client.auth.github.map_user(
                 user_name=user_name,
                 policies=policies,
                 mount_point=self.TEST_GITHUB_PATH,
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=response.status_code
+                second=response.status
             )
 
-            response = self.client.auth.github.read_user_mapping(
+            response = await self.client.auth.github.read_user_mapping(
                 user_name=user_name,
                 mount_point=self.TEST_GITHUB_PATH,
             )
@@ -253,20 +250,20 @@ class TestGithub(HvacIntegrationTestCase, TestCase):
         ("valid token", 'valid-token', None, None),
         ("invalid token not in org", "invalid-token", exceptions.InvalidRequest, 'user is not part of required org'),
     ])
-    def test_login(self, test_label, test_token, exceptions_raised, exception_msg):
-        self.client.auth.github.configure(
+    async def test_login(self, test_label, test_token, exceptions_raised, exception_msg):
+        await self.client.auth.github.configure(
             organization='hvac',
             base_url='http://localhost:{port}/'.format(port=self.mock_server_port),
             mount_point=self.TEST_GITHUB_PATH,
         )
         if exceptions_raised is None:
-            self.client.auth.github.login(
+            await self.client.auth.github.login(
                 token=test_token,
                 mount_point=self.TEST_GITHUB_PATH,
             )
         else:
             with self.assertRaises(exceptions_raised) as cm:
-                self.client.auth.github.login(
+                await self.client.auth.github.login(
                     token=test_token,
                     mount_point=self.TEST_GITHUB_PATH,
                 )

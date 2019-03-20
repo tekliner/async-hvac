@@ -60,7 +60,6 @@ class HvacIntegrationTestCase(object):
         This allows subclass's to include additional tearDown logic to reset the state of the vault server when needed.
         """
         self.client.token = self.manager.root_token
-        await self.client.close()
 
     @staticmethod
     def convert_python_ttl_value_to_expected_vault_response(ttl_value):

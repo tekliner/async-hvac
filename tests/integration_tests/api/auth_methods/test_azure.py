@@ -22,10 +22,11 @@ class TestAzure(HvacIntegrationTestCase, TestCase):
             )
 
     async def tearDown(self):
+        await super(TestAzure, self).tearDown()
         await self.client.disable_auth_backend(
             mount_point=self.TEST_MOUNT_POINT,
         )
-        await super(TestAzure, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         param(
