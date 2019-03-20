@@ -86,6 +86,7 @@ class ServerManager(object):
 
     def stop(self):
         """Stop the vault server process being managed by this class."""
+        self.client.close()
         for process_num, process in enumerate(self._processes):
             process.kill()
             if os.getenv('HVAC_OUTPUT_VAULT_STDERR', False):
@@ -129,4 +130,4 @@ class ServerManager(object):
         """Unseal the vault server process."""
         vault_addresses = self.get_active_vault_addresses()
         for vault_address in vault_addresses:
-            create_client(url=vault_address).sys.submit_unseal_keys(self.keys)
+            create_client(sync=True, url=vault_address).sys.submit_unseal_keys(self.keys)

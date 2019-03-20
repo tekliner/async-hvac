@@ -1,4 +1,5 @@
 """Collection of methods used by various hvac test cases."""
+import asyncio
 import base64
 import logging
 import operator
@@ -9,7 +10,7 @@ import subprocess
 import sys
 from distutils.version import StrictVersion
 
-from async_hvac import Client
+from async_hvac import SyncWrapper, AsyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def get_generate_root_otp():
     return test_otp
 
 
-def create_client(url='https://localhost:8200', **kwargs):
+def create_client(url='https://localhost:8200', sync=False, **kwargs):
     """Small helper to instantiate a :py:class:`hvac.v1.Client` class with the appropriate parameters for the test env.
 
     :param url: Vault address to configure the client with.
@@ -73,13 +74,16 @@ def create_client(url='https://localhost:8200', **kwargs):
     client_cert_path = get_config_file_path('client-cert.pem')
     client_key_path = get_config_file_path('client-key.pem')
     server_cert_path = get_config_file_path('server-cert.pem')
-
-    return Client(
+    client = AsyncClient(
         url=url,
         cert=(client_cert_path, client_key_path),
         verify=server_cert_path,
         **kwargs
     )
+    if sync:
+        return SyncWrapper(client)
+
+    return client
 
 
 def get_free_port():

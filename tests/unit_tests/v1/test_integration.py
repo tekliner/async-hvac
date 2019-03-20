@@ -12,18 +12,15 @@ loop = asyncio.get_event_loop()
 
 
 def create_client(sync=False, **kwargs):
+    client = AsyncClient(url='https://localhost:8200',
+                cert=('test/client-cert.pem', 'test/client-key.pem'),
+                verify='test/server-cert.pem',
+                loop=IntegrationTest.loop,
+                **kwargs)
     if sync:
-        return Client(url='https://localhost:8200',
-                      cert=('test/client-cert.pem', 'test/client-key.pem'),
-                      verify='test/server-cert.pem',
-                      loop=IntegrationTest.loop,
-                      **kwargs)
-    else:
-        return AsyncClient(url='https://localhost:8200',
-                           cert=('test/client-cert.pem', 'test/client-key.pem'),
-                           verify='test/server-cert.pem',
-                           loop=IntegrationTest.loop,
-                           **kwargs)
+        return Client(client)
+
+    return client
 
 
 class IntegrationTest(asynctest.TestCase):

@@ -16,8 +16,6 @@ class Mocker(aioresponses):
             json = json_util.dumps(json)
         else:
             json = ''
-        if method.upper() == 'LIST':
-            method = 'GET'
         self.add(url, method=method.upper(), status=status_code, body=json, **kwargs)
 
     async def _request_mock(self, orig_self: ClientSession,

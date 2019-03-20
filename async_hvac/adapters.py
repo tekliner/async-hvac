@@ -139,7 +139,7 @@ class Adapter(object):
         :return: The response of the request.
         :rtype: requests.Response
         """
-        return self.request('get', url, **kwargs)
+        return self.request('list', url, **kwargs)
 
     def head(self, url, **kwargs):
         """Performs a HEAD request.
@@ -304,7 +304,7 @@ class Request(Adapter):
         if raise_exception and 400 <= response.status < 600:
             text = errors = None
             if response.headers.get('Content-Type') == 'application/json':
-                errors = response.json().get('errors')
+                errors = (await response.json()).get('errors')
             if errors is None:
                 text = response.text
             utils.raise_for_error(response.status, text, errors=errors)

@@ -33,7 +33,7 @@ class HvacIntegrationTestCase(object):
             ]
         cls.manager = ServerManager(
             config_paths=config_paths,
-            client=create_client(),
+            client=create_client(sync=True),
             use_consul=cls.enable_vault_ha,
         )
         cls.manager.start()
@@ -45,21 +45,22 @@ class HvacIntegrationTestCase(object):
         """Stop the vault server process at the conclusion of a test class."""
         cls.manager.stop()
 
-    def setUp(self):
+    async def setUp(self):
         """Set the client attribute to an authenticated hvac Client instance."""
         self.client = create_client(token=self.manager.root_token)
 
         # Squelch deprecating warnings during tests as we may want to deliberately call deprecated methods and/or verify
         # warnings invocations.
-        warnings_patcher = patch('hvac.utils.warnings', spec=warnings)
+        warnings_patcher = patch('async_hvac.utils.warnings', spec=warnings)
         self.mock_warnings = warnings_patcher.start()
 
-    def tearDown(self):
+    async def tearDown(self):
         """Ensure the hvac Client instance's root token is reset after any auth method tests that may have modified it.
 
         This allows subclass's to include additional tearDown logic to reset the state of the vault server when needed.
         """
         self.client.token = self.manager.root_token
+        await self.client.close()
 
     @staticmethod
     def convert_python_ttl_value_to_expected_vault_response(ttl_value):

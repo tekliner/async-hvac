@@ -1,6 +1,6 @@
 import json
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized, param
 
@@ -12,19 +12,19 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 class TestGcp(HvacIntegrationTestCase, TestCase):
     TEST_MOUNT_POINT = 'gcp-test'
 
-    def setUp(self):
-        super(TestGcp, self).setUp()
-        if '%s/' % self.TEST_MOUNT_POINT not in self.client.list_auth_backends():
-            self.client.enable_auth_backend(
+    async def setUp(self):
+        await super(TestGcp, self).setUp()
+        if '%s/' % self.TEST_MOUNT_POINT not in await self.client.list_auth_backends():
+            await self.client.enable_auth_backend(
                 backend_type='gcp',
                 mount_point=self.TEST_MOUNT_POINT,
             )
 
-    def tearDown(self):
-        super(TestGcp, self).tearDown()
-        self.client.disable_auth_backend(
+    async def tearDown(self):
+        await self.client.disable_auth_backend(
             mount_point=self.TEST_MOUNT_POINT,
         )
+        await super(TestGcp, self).tearDown()
 
     @parameterized.expand([
         param(
@@ -41,10 +41,10 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             exception_message='error reading google credentials from given JSON'
         ),
     ])
-    def test_configure(self, label, credentials='', raises=None, exception_message=''):
+    async def test_configure(self, label, credentials='', raises=None, exception_message=''):
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.configure(
+                await self.client.auth.gcp.configure(
                     credentials=credentials,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -53,13 +53,13 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            configure_response = self.client.auth.gcp.configure(
+            configure_response = await self.client.auth.gcp.configure(
                 credentials=credentials,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
             self.assertEqual(
-                first=configure_response.status_code,
+                first=configure_response.status,
                 second=204,
             )
 
@@ -73,21 +73,21 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath
         )
     ])
-    def test_read_config(self, label, write_config_first=True, raises=None):
+    async def test_read_config(self, label, write_config_first=True, raises=None):
 
         credentials = utils.load_config_file('example.jwt.json')
         if write_config_first:
-            self.client.auth.gcp.configure(
+            await self.client.auth.gcp.configure(
                 credentials=credentials,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         if raises is not None:
             with self.assertRaises(raises):
-                self.client.auth.gcp.read_config(
+                await self.client.auth.gcp.read_config(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
         else:
-            read_config_response = self.client.auth.gcp.read_config(
+            read_config_response = await self.client.auth.gcp.read_config(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('read_config_response: %s' % read_config_response)
@@ -114,24 +114,24 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             raises=exceptions.UnexpectedError,
         ),
     ])
-    def test_delete_config(self, label, write_config_first=True, raises=None):
+    async def test_delete_config(self, label, write_config_first=True, raises=None):
 
         if write_config_first:
-            self.client.auth.gcp.configure(
+            await self.client.auth.gcp.configure(
                 mount_point=self.TEST_MOUNT_POINT,
             )
         if raises is not None:
             with self.assertRaises(raises):
-                self.client.auth.gcp.delete_config(
+                await self.client.auth.gcp.delete_config(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
         else:
-            delete_config_response = self.client.auth.gcp.delete_config(
+            delete_config_response = await self.client.auth.gcp.delete_config(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_config_response: %s' % delete_config_response)
             self.assertEqual(
-                first=delete_config_response.status_code,
+                first=delete_config_response.status,
                 second=204,
             )
 
@@ -167,14 +167,14 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             exception_message='unsupported policies argument provided',
         )
     ])
-    def test_create_role(self, label, role_type, policies=None, extra_params=None, raises=None, exception_message=''):
+    async def test_create_role(self, label, role_type, policies=None, extra_params=None, raises=None, exception_message=''):
         role_name = 'hvac'
         project_id = 'test-hvac-project-not-a-real-project'
         if extra_params is None:
             extra_params = {}
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.create_role(
+                await self.client.auth.gcp.create_role(
                     name=role_name,
                     role_type=role_type,
                     project_id=project_id,
@@ -187,7 +187,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_role_response = self.client.auth.gcp.create_role(
+            create_role_response = await self.client.auth.gcp.create_role(
                 name=role_name,
                 role_type=role_type,
                 project_id=project_id,
@@ -201,7 +201,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             else:
                 expected_status_code = 200  # TODO => figure out why this isn't a 204?
             self.assertEqual(
-                first=create_role_response.status_code,
+                first=create_role_response.status,
                 second=expected_status_code,
             )
 
@@ -221,11 +221,11 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
         ),
         # TODO: wrong role type (gce)
     ])
-    def test_edit_service_accounts_on_iam_role(self, label, add=None, remove=None, create_role_first=True, raises=None, exception_message=''):
+    async def test_edit_service_accounts_on_iam_role(self, label, add=None, remove=None, create_role_first=True, raises=None, exception_message=''):
         role_name = 'hvac'
         project_id = 'test-hvac-project-not-a-real-project'
         if create_role_first:
-            self.client.auth.gcp.create_role(
+            await self.client.auth.gcp.create_role(
                 name=role_name,
                 role_type='iam',
                 project_id=project_id,
@@ -234,7 +234,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.edit_service_accounts_on_iam_role(
+                await self.client.auth.gcp.edit_service_accounts_on_iam_role(
                     name=role_name,
                     add=add,
                     remove=remove,
@@ -245,7 +245,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            edit_sa_on_iam_response = self.client.auth.gcp.edit_service_accounts_on_iam_role(
+            edit_sa_on_iam_response = await self.client.auth.gcp.edit_service_accounts_on_iam_role(
                 name=role_name,
                 add=add,
                 remove=remove,
@@ -257,7 +257,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             else:
                 expected_status_code = 200  # TODO => figure out why this isn't a 204?
             self.assertEqual(
-                first=edit_sa_on_iam_response.status_code,
+                first=edit_sa_on_iam_response.status,
                 second=expected_status_code,
             )
 
@@ -277,11 +277,11 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
         ),
         # TODO: wrong role type (iam)
     ])
-    def test_edit_labels_on_gce_role(self, label, add=None, remove=None, create_role_first=True, raises=None, exception_message=''):
+    async def test_edit_labels_on_gce_role(self, label, add=None, remove=None, create_role_first=True, raises=None, exception_message=''):
         role_name = 'hvac'
         project_id = 'test-hvac-project-not-a-real-project'
         if create_role_first:
-            self.client.auth.gcp.create_role(
+            await self.client.auth.gcp.create_role(
                 name=role_name,
                 role_type='gce',
                 project_id=project_id,
@@ -290,7 +290,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.edit_labels_on_gce_role(
+                await self.client.auth.gcp.edit_labels_on_gce_role(
                     name=role_name,
                     add=add,
                     remove=remove,
@@ -301,7 +301,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            edit_labled_response = self.client.auth.gcp.edit_labels_on_gce_role(
+            edit_labled_response = await self.client.auth.gcp.edit_labels_on_gce_role(
                 name=role_name,
                 add=add,
                 remove=remove,
@@ -313,7 +313,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             else:
                 expected_status_code = 200  # TODO => figure out why this isn't a 204?
             self.assertEqual(
-                first=edit_labled_response.status_code,
+                first=edit_labled_response.status,
                 second=expected_status_code,
             )
 
@@ -327,11 +327,11 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_role(self, label, create_role_first=True, raises=None, exception_message=''):
+    async def test_read_role(self, label, create_role_first=True, raises=None, exception_message=''):
         role_name = 'hvac'
         project_id = 'test-hvac-project-not-a-real-project'
         if create_role_first:
-            self.client.auth.gcp.create_role(
+            await self.client.auth.gcp.create_role(
                 name=role_name,
                 role_type='gce',
                 project_id=project_id,
@@ -340,7 +340,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.read_role(
+                await self.client.auth.gcp.read_role(
                     name=role_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -349,7 +349,7 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_role_response = self.client.auth.gcp.read_role(
+            read_role_response = await self.client.auth.gcp.read_role(
                 name=role_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -379,12 +379,12 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_list_roles(self, label, num_roles_to_create=1, raises=None):
+    async def test_list_roles(self, label, num_roles_to_create=1, raises=None):
         project_id = 'test-hvac-project-not-a-real-project'
         roles_to_create = ['hvac%s' % n for n in range(0, num_roles_to_create)]
         logging.debug('roles_to_create: %s' % roles_to_create)
         for role_to_create in roles_to_create:
-            create_role_response = self.client.auth.gcp.create_role(
+            create_role_response = await self.client.auth.gcp.create_role(
                 name=role_to_create,
                 role_type='gce',
                 project_id=project_id,
@@ -395,11 +395,11 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
 
         if raises is not None:
             with self.assertRaises(raises):
-                self.client.auth.gcp.list_roles(
+                await self.client.auth.gcp.list_roles(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
         else:
-            list_roles_response = self.client.auth.gcp.list_roles(
+            list_roles_response = await self.client.auth.gcp.list_roles(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('list_roles_response: %s' % list_roles_response)
@@ -417,11 +417,11 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
             configure_role_first=False,
         ),
     ])
-    def test_delete_role(self, label, configure_role_first=True, raises=None):
+    async def test_delete_role(self, label, configure_role_first=True, raises=None):
         role_name = 'hvac'
         project_id = 'test-hvac-project-not-a-real-project'
         if configure_role_first:
-            create_role_response = self.client.auth.gcp.create_role(
+            create_role_response = await self.client.auth.gcp.create_role(
                 name=role_name,
                 role_type='gce',
                 project_id=project_id,
@@ -432,17 +432,17 @@ class TestGcp(HvacIntegrationTestCase, TestCase):
 
         if raises is not None:
             with self.assertRaises(raises):
-                self.client.auth.gcp.delete_role(
+                await self.client.auth.gcp.delete_role(
                     role=role_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
         else:
-            delete_role_response = self.client.auth.gcp.delete_role(
+            delete_role_response = await self.client.auth.gcp.delete_role(
                 role=role_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_role_response: %s' % delete_role_response)
             self.assertEqual(
-                first=delete_role_response.status_code,
+                first=delete_role_response.status,
                 second=204,
             )

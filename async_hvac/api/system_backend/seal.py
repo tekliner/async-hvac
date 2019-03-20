@@ -83,7 +83,7 @@ class Seal(SystemBackendMixin):
         )
         return await response.json()
 
-    def submit_unseal_keys(self, keys, migrate=False):
+    async def submit_unseal_keys(self, keys, migrate=False):
         """Enter multiple master key share to progress the unsealing of the Vault.
 
         :param key: List of master key shares.
@@ -97,7 +97,7 @@ class Seal(SystemBackendMixin):
         result = None
 
         for key in keys:
-            result = self.submit_unseal_key(
+            result = await self.submit_unseal_key(
                 key=key,
                 migrate=migrate,
             )
