@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized, param
 
 from async_hvac import adapters
+from tests.utils import requests_mock
 
 
 class TestRequest(TestCase):
@@ -34,53 +34,53 @@ class TestRequest(TestCase):
 
         ),
     ])
-    def test_get(self, label, url, path='v1/sys/health', redirect_url=None):
+    async def test_get(self, label, url, path='v1/sys/health', redirect_url=None):
         path = path.replace('//', '/')
         expected_status_code = 200
         mock_url = '{0}/{1}'.format(url, path)
         expected_request_urls = [mock_url]
-        adapter = adapters.Request(base_uri=url)
-        response_headers = {}
-        response_status_code = 200
-        if redirect_url is not None:
-            response_headers['Location'] = redirect_url
-            response_status_code = 301
-        with requests_mock.mock() as requests_mocker:
-            logging.debug('Registering "mock_url": %s' % mock_url)
-            requests_mocker.register_uri(
-                method='GET',
-                url=mock_url,
-                headers=response_headers,
-                status_code=response_status_code,
-            )
+        async with adapters.Request(base_uri=url) as adapter:
+            response_headers = {}
+            response_status_code = 200
             if redirect_url is not None:
-                expected_request_urls.append(redirect_url)
-                logging.debug('Registering "redirect_url": %s' % redirect_url)
+                response_headers['Location'] = redirect_url
+                response_status_code = 301
+            with requests_mock.mock() as requests_mocker:
+                logging.debug('Registering "mock_url": %s' % mock_url)
                 requests_mocker.register_uri(
                     method='GET',
-                    url=redirect_url,
+                    url=mock_url,
+                    headers=response_headers,
+                    status_code=response_status_code,
+                )
+                if redirect_url is not None:
+                    expected_request_urls.append(redirect_url)
+                    logging.debug('Registering "redirect_url": %s' % redirect_url)
+                    requests_mocker.register_uri(
+                        method='GET',
+                        url=redirect_url,
+                    )
+
+                response = await adapter.get(
+                    url=path,
                 )
 
-            response = adapter.get(
-                url=path,
-            )
-
-        # Assert all our expected uri(s) were requested
-        for request_num, expected_request_url in enumerate(expected_request_urls):
-            self.assertEqual(
-                first=expected_request_url,
-                second=requests_mocker.request_history[request_num].url
-            )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
+                # Assert all our expected uri(s) were requested
+                for request_num, expected_request_url in enumerate(expected_request_urls):
+                    self.assertEqual(
+                        first=expected_request_url,
+                        second=requests_mocker.request_history[request_num].url
+                    )
+                self.assertEqual(
+                    first=expected_status_code,
+                    second=response.status,
+                )
 
     @parameterized.expand([
         ("kv secret lookup", 'v1/secret/some-secret'),
     ])
     @requests_mock.Mocker()
-    def test_list(self, test_label, test_path, requests_mocker):
+    async def test_list(self, test_label, test_path, requests_mocker):
         mock_response = {
             'auth': None,
             'data': {
@@ -100,15 +100,15 @@ class TestRequest(TestCase):
             url=mock_url,
             json=mock_response
         )
-        adapter = adapters.Request()
-        response = adapter.list(
-            url=test_path,
-        )
-        self.assertEqual(
-            first=expected_status_code,
-            second=response.status_code,
-        )
-        self.assertEqual(
-            first=mock_response,
-            second=response.json()
-        )
+        async with adapters.Request() as adapter:
+            response = await adapter.list(
+                url=test_path,
+            )
+            self.assertEqual(
+                first=expected_status_code,
+                second=response.status,
+            )
+            self.assertEqual(
+                first=mock_response,
+                second=await response.json()
+            )

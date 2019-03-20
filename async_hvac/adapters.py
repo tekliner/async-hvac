@@ -45,13 +45,11 @@ class Adapter(object):
         :param namespace: Optional Vault Namespace.
         :type namespace: str
         """
-        if not session:
-            session = requests.Session()
 
         self.base_uri = base_uri
         self.token = token
         self.namespace = namespace
-        self.session = session
+        self._session = session
         self.allow_redirects = allow_redirects
 
         self._kwargs = {
@@ -299,18 +297,11 @@ class Request(Adapter):
             headers['X-Vault-Wrap-TTL'] = str(wrap_ttl)
         response = await self.session.request(
             method, url, headers=headers,
-            allow_redirects=False,
+            allow_redirects=self.allow_redirects,
             ssl=self._sslcontext,
             proxy=self._proxies, **kwargs)
-        while response.status >= 300 and response.status < 400 and self.allow_redirects and 'Location' in response.headers:
-            url = self.urljoin(self._url, response.headers['Location'])
-            response = await self.session.request(
-                method, url, headers=headers,
-                allow_redirects=False,
-                ssl=self._sslcontext,
-                proxy=self._proxies, **kwargs)
 
-        if response.status >= 400 and response.status < 600:
+        if raise_exception and 400 <= response.status < 600:
             text = errors = None
             if response.headers.get('Content-Type') == 'application/json':
                 errors = response.json().get('errors')

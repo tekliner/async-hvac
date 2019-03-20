@@ -5,7 +5,7 @@ from parameterized import parameterized
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Mfa
 from async_hvac.api.auth_methods.github import DEFAULT_MOUNT_POINT
-from tests.unit_tests import requests_mock
+from tests.utils import requests_mock
 
 
 class TestMfa(TestCase):

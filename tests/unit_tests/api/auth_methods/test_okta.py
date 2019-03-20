@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.auth_methods import Okta
-from tests.unit_tests import requests_mock
+from tests.utils import requests_mock
 
 
 class TestOkta(TestCase):
