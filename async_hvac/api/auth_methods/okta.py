@@ -71,7 +71,7 @@ class Okta(VaultApiBase):
         response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     async def list_users(self, mount_point=DEFAULT_MOUNT_POINT):
         """List the users configured in the Okta method.
@@ -88,7 +88,7 @@ class Okta(VaultApiBase):
         response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def register_user(self, username, groups=None, policies=None, mount_point=DEFAULT_MOUNT_POINT):
         """Register a new user and maps a set of policies to it.
@@ -145,7 +145,7 @@ class Okta(VaultApiBase):
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
     def delete_user(self, username, mount_point=DEFAULT_MOUNT_POINT):
         """Delete an existing username from the method.
@@ -187,7 +187,7 @@ class Okta(VaultApiBase):
         response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def register_group(self, name, policies=None, mount_point=DEFAULT_MOUNT_POINT):
         """Register a new group and maps a set of policies to it.
@@ -236,7 +236,7 @@ class Okta(VaultApiBase):
         response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def delete_group(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Delete an existing group from the method.

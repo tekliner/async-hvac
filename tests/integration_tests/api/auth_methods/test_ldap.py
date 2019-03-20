@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from ldap_test import LdapServer
 from parameterized import parameterized, param
@@ -85,19 +85,20 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         super(TestLdap, cls).tearDownClass()
         cls.ldap_server.stop()
 
-    def setUp(self):
-        super(TestLdap, self).setUp()
-        if 'ldap/' not in self.client.list_auth_backends():
-            self.client.sys.enable_auth_method(
+    async def setUp(self):
+        await super(TestLdap, self).setUp()
+        if 'ldap/' not in await self.client.list_auth_backends():
+            await self.client.sys.enable_auth_method(
                 method_type='ldap',
                 path=self.TEST_LDAP_PATH
             )
 
-    def tearDown(self):
-        super(TestLdap, self).tearDown()
-        self.client.disable_auth_backend(
+    async def tearDown(self):
+        await super(TestLdap, self).tearDown()
+        await self.client.disable_auth_backend(
             mount_point=self.TEST_LDAP_PATH,
         )
+        await self.client.close()
 
     @parameterized.expand([
         ('update url', dict(url=LDAP_URL)),
@@ -107,7 +108,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('incorrect tls version', dict(url=LDAP_URL, tls_min_version='cats'), exceptions.InvalidRequest,
          "invalid 'tls_min_version'"),
     ])
-    def test_configure(self, test_label, parameters, raises=None, exception_message=''):
+    async def test_configure(self, test_label, parameters, raises=None, exception_message=''):
         parameters.update({
             'user_dn': LDAP_USERS_DN,
             'group_dn': LDAP_GROUPS_DN,
@@ -115,20 +116,20 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         })
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.configure(**parameters)
+                await self.client.auth.ldap.configure(**parameters)
             self.assertIn(
                 member=exception_message,
                 container=str(cm.exception),
             )
         else:
             expected_status_code = 204
-            configure_response = self.client.auth.ldap.configure(**parameters)
+            configure_response = await self.client.auth.ldap.configure(**parameters)
             self.assertEqual(
                 first=expected_status_code,
-                second=configure_response.status_code
+                second=configure_response.status
             )
 
-            read_config_response = self.client.auth.ldap.read_configuration(
+            read_config_response = await self.client.auth.ldap.read_configuration(
                 mount_point=self.TEST_LDAP_PATH,
             )
             for parameter, argument in parameters.items():
@@ -139,8 +140,8 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=read_config_response['data'].values(),
                 )
 
-    def test_read_configuration(self):
-        response = self.client.auth.ldap.read_configuration(
+    async def test_read_configuration(self):
+        response = await self.client.auth.ldap.read_configuration(
             mount_point=self.TEST_LDAP_PATH,
         )
         self.assertIn(
@@ -153,11 +154,11 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('policies as list', 'cats', ['purr-policy']),
         ('policies as invalid type', 'cats', 'purr-policy', exceptions.ParamValidationError, '"policies" argument must be an instance of list'),
     ])
-    def test_create_or_update_group(self, test_label, name, policies=None, raises=None, exception_message=''):
+    async def test_create_or_update_group(self, test_label, name, policies=None, raises=None, exception_message=''):
         expected_status_code = 204
         if raises:
             with self.assertRaises(raises) as cm:
-                create_response = self.client.auth.ldap.create_or_update_group(
+                create_response = await self.client.auth.ldap.create_or_update_group(
                     name=name,
                     policies=policies,
                     mount_point=self.TEST_LDAP_PATH,
@@ -168,29 +169,29 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            create_response = self.client.auth.ldap.create_or_update_group(
+            create_response = await self.client.auth.ldap.create_or_update_group(
                 name=name,
                 policies=policies,
                 mount_point=self.TEST_LDAP_PATH,
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=create_response.status_code
+                second=create_response.status
             )
 
     @parameterized.expand([
         ('read configured groups', 'cats'),
         ('non-existent groups', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_list_groups(self, test_label, name, configure_first=True, raises=None, exception_message=None):
+    async def test_list_groups(self, test_label, name, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_group(
+            await self.client.auth.ldap.create_or_update_group(
                 name=name,
                 mount_point=self.TEST_LDAP_PATH,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.list_groups(
+                await self.client.auth.ldap.list_groups(
                     mount_point=self.TEST_LDAP_PATH,
                 )
             if exception_message is not None:
@@ -199,7 +200,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            list_groups_response = self.client.auth.ldap.list_groups(
+            list_groups_response = await self.client.auth.ldap.list_groups(
                 mount_point=self.TEST_LDAP_PATH,
             )
             # raise Exception(list_groups_response)
@@ -212,15 +213,15 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('read configured group', 'cats'),
         ('non-existent group', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_read_group(self, test_label, name, configure_first=True, raises=None, exception_message=None):
+    async def test_read_group(self, test_label, name, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_group(
+            await self.client.auth.ldap.create_or_update_group(
                 name=name,
                 mount_point=self.TEST_LDAP_PATH,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.read_group(
+                await self.client.auth.ldap.read_group(
                     name=name,
                     mount_point=self.TEST_LDAP_PATH,
                 )
@@ -230,7 +231,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            read_group_response = self.client.auth.ldap.read_group(
+            read_group_response = await self.client.auth.ldap.read_group(
                 name=name,
                 mount_point=self.TEST_LDAP_PATH,
             )
@@ -247,11 +248,11 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('groups as list', 'cats', None, ['meow-group']),
         ('groups as invalid type', 'cats', None, 'meow-group', exceptions.ParamValidationError, '"groups" argument must be an instance of list'),
     ])
-    def test_create_or_update_user(self, test_label, username, policies=None, groups=None, raises=None, exception_message=''):
+    async def test_create_or_update_user(self, test_label, username, policies=None, groups=None, raises=None, exception_message=''):
         expected_status_code = 204
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.create_or_update_user(
+                await self.client.auth.ldap.create_or_update_user(
                     username=username,
                     policies=policies,
                     groups=groups,
@@ -263,7 +264,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            create_response = self.client.auth.ldap.create_or_update_user(
+            create_response = await self.client.auth.ldap.create_or_update_user(
                 username=username,
                 policies=policies,
                 groups=groups,
@@ -271,42 +272,42 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
             )
             self.assertEqual(
                 first=expected_status_code,
-                second=create_response.status_code
+                second=create_response.status
             )
 
     @parameterized.expand([
         ('read configured group', 'cats'),
         ('non-existent group', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_delete_group(self, test_label, name, configure_first=True, raises=None, exception_message=None):
+    async def test_delete_group(self, test_label, name, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_group(
+            await self.client.auth.ldap.create_or_update_group(
                 name=name,
                 mount_point=self.TEST_LDAP_PATH,
             )
         expected_status_code = 204
-        delete_group_response = self.client.auth.ldap.delete_group(
+        delete_group_response = await self.client.auth.ldap.delete_group(
             name=name,
             mount_point=self.TEST_LDAP_PATH,
         )
         self.assertEqual(
             first=expected_status_code,
-            second=delete_group_response.status_code
+            second=delete_group_response.status
         )
 
     @parameterized.expand([
         ('read configured user', 'cats'),
         ('non-existent user', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_list_users(self, test_label, username, configure_first=True, raises=None, exception_message=None):
+    async def test_list_users(self, test_label, username, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_user(
+            await self.client.auth.ldap.create_or_update_user(
                 username=username,
                 mount_point=self.TEST_LDAP_PATH,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.list_users(
+                await self.client.auth.ldap.list_users(
                     mount_point=self.TEST_LDAP_PATH,
                 )
             if exception_message is not None:
@@ -315,7 +316,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            list_users_response = self.client.auth.ldap.list_users(
+            list_users_response = await self.client.auth.ldap.list_users(
                 mount_point=self.TEST_LDAP_PATH,
             )
             self.assertDictEqual(
@@ -327,15 +328,15 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('read configured user', 'cats'),
         ('non-existent user', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_read_user(self, test_label, username, configure_first=True, raises=None, exception_message=None):
+    async def test_read_user(self, test_label, username, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_user(
+            await self.client.auth.ldap.create_or_update_user(
                 username=username,
                 mount_point=self.TEST_LDAP_PATH,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.read_user(
+                await self.client.auth.ldap.read_user(
                     username=username,
                     mount_point=self.TEST_LDAP_PATH,
                 )
@@ -345,7 +346,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            read_user_response = self.client.auth.ldap.read_user(
+            read_user_response = await self.client.auth.ldap.read_user(
                 username=username,
                 mount_point=self.TEST_LDAP_PATH,
             )
@@ -358,20 +359,20 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         ('read configured user', 'cats'),
         ('non-existent user', 'cats', False, exceptions.InvalidPath),
     ])
-    def test_delete_user(self, test_label, username, configure_first=True, raises=None, exception_message=None):
+    async def test_delete_user(self, test_label, username, configure_first=True, raises=None, exception_message=None):
         if configure_first:
-            self.client.auth.ldap.create_or_update_user(
+            await self.client.auth.ldap.create_or_update_user(
                 username=username,
                 mount_point=self.TEST_LDAP_PATH,
             )
         expected_status_code = 204
-        delete_user_response = self.client.auth.ldap.delete_user(
+        delete_user_response = await self.client.auth.ldap.delete_user(
             username=username,
             mount_point=self.TEST_LDAP_PATH,
         )
         self.assertEqual(
             first=expected_status_code,
-            second=delete_user_response.status_code
+            second=delete_user_response.status
         )
 
     @parameterized.expand([
@@ -400,13 +401,13 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
             skip_due_to_vault_version=utils.vault_version_ge('0.10.3'),
         ),
     ])
-    def test_login(self, label, username=LDAP_USER_NAME, password=LDAP_USER_PASSWORD, attach_policy=True, raises=None,
+    async def test_login(self, label, username=LDAP_USER_NAME, password=LDAP_USER_PASSWORD, attach_policy=True, raises=None,
                    exception_message='', skip_due_to_vault_version=False):
         if skip_due_to_vault_version:
             self.skipTest(reason='test case does not apply to Vault version under test')
 
         test_policy_name = 'test-ldap-policy'
-        self.client.auth.ldap.configure(
+        await self.client.auth.ldap.configure(
             url=self.mock_ldap_url,
             bind_dn=self.ldap_server.config['bind_dn'],
             bind_pass=self.ldap_server.config['password'],
@@ -420,7 +421,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
 
         if attach_policy:
             self.prep_policy(test_policy_name)
-            self.client.auth.ldap.create_or_update_group(
+            await self.client.auth.ldap.create_or_update_group(
                 name=LDAP_GROUP_NAME,
                 policies=[test_policy_name],
                 mount_point=self.TEST_LDAP_PATH,
@@ -428,7 +429,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.ldap.login(
+                await self.client.auth.ldap.login(
                     username=username,
                     password=password,
                     mount_point=self.TEST_LDAP_PATH,
@@ -439,7 +440,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            login_response = self.client.auth.ldap.login(
+            login_response = await self.client.auth.ldap.login(
                 username=username,
                 password=password,
                 mount_point=self.TEST_LDAP_PATH,

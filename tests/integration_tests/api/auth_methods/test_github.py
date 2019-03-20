@@ -1,4 +1,3 @@
-import traceback
 from threading import Thread
 from asynctest import TestCase
 

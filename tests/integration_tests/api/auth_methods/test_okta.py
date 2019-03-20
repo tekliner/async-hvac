@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized, param
 
@@ -14,28 +14,29 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
     TEST_USERNAME = 'hvac-person'
     TEST_GROUP = 'hvac-group'
 
-    def setUp(self):
-        super(TestOkta, self).setUp()
-        self.client.sys.enable_auth_method(
+    async def setUp(self):
+        await super(TestOkta, self).setUp()
+        await self.client.sys.enable_auth_method(
             method_type='okta',
             path=self.TEST_MOUNT_POINT,
         )
 
-    def tearDown(self):
-        self.client.sys.disable_auth_method(
+    async def tearDown(self):
+        await self.client.sys.disable_auth_method(
             path=self.TEST_MOUNT_POINT,
         )
-        super(TestOkta, self).tearDown()
+        await super(TestOkta, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         param(
             'success',
         ),
     ])
-    def test_configure(self, label, raises=None, exception_msg=''):
+    async def test_configure(self, label, raises=None, exception_msg=''):
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.configure(
+                await self.client.auth.okta.configure(
                     org_name=self.TEST_ORG_NAME,
                     base_url=self.TEST_BASE_URL,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -45,14 +46,14 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
             self.assertEqual(
-                first=configure_response.status_code,
+                first=configure_response.status,
                 second=204,
             )
 
@@ -66,9 +67,9 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_config(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_read_config(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -76,7 +77,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.gcp.read_config(
+                await self.client.auth.gcp.read_config(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -84,7 +85,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_config_response = self.client.auth.okta.read_config(
+            read_config_response = await self.client.auth.okta.read_config(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % read_config_response)
@@ -103,22 +104,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_list_users(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_list_users(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_user_response = self.client.auth.okta.register_user(
+            register_user_response = await self.client.auth.okta.register_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_user_response: %s' % register_user_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.list_users(
+                await self.client.auth.okta.list_users(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -126,7 +127,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_users_response = self.client.auth.okta.list_users(
+            list_users_response = await self.client.auth.okta.list_users(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('list_users_response: %s' % list_users_response)
@@ -144,22 +145,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             configure_first=False,
         ),
     ])
-    def test_register_user(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_register_user(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_user_response = self.client.auth.okta.register_user(
+            register_user_response = await self.client.auth.okta.register_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_user_response: %s' % register_user_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.register_user(
+                await self.client.auth.okta.register_user(
                     username=self.TEST_USERNAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -168,13 +169,13 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            register_user_response = self.client.auth.okta.register_user(
+            register_user_response = await self.client.auth.okta.register_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_user_response: %s' % register_user_response)
             self.assertEqual(
-                first=register_user_response.status_code,
+                first=register_user_response.status,
                 second=204,
             )
 
@@ -188,22 +189,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_user(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_read_user(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_user_response = self.client.auth.okta.register_user(
+            register_user_response = await self.client.auth.okta.register_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_user_response: %s' % register_user_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.read_user(
+                await self.client.auth.okta.read_user(
                     username=self.TEST_USERNAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -212,7 +213,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_user_response = self.client.auth.okta.read_user(
+            read_user_response = await self.client.auth.okta.read_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -231,22 +232,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             configure_first=False,
         ),
     ])
-    def test_delete_user(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_delete_user(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_user_response = self.client.auth.okta.register_user(
+            register_user_response = await self.client.auth.okta.register_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_user_response: %s' % register_user_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.delete_user(
+                await self.client.auth.okta.delete_user(
                     username=self.TEST_USERNAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -255,13 +256,13 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_user_response = self.client.auth.okta.delete_user(
+            delete_user_response = await self.client.auth.okta.delete_user(
                 username=self.TEST_USERNAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_user_response: %s' % delete_user_response)
             self.assertEqual(
-                first=delete_user_response.status_code,
+                first=delete_user_response.status,
                 second=204,
             )
 
@@ -275,22 +276,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_list_groups(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_list_groups(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_group_response = self.client.auth.okta.register_group(
+            register_group_response = await self.client.auth.okta.register_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_group_response: %s' % register_group_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.list_groups(
+                await self.client.auth.okta.list_groups(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -298,7 +299,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_groups_response = self.client.auth.okta.list_groups(
+            list_groups_response = await self.client.auth.okta.list_groups(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('list_groups_response: %s' % list_groups_response)
@@ -316,22 +317,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             configure_first=False,
         ),
     ])
-    def test_register_group(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_register_group(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_group_response = self.client.auth.okta.register_group(
+            register_group_response = await self.client.auth.okta.register_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_group_response: %s' % register_group_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.register_group(
+                await self.client.auth.okta.register_group(
                     name=self.TEST_GROUP,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -340,13 +341,13 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            register_group_response = self.client.auth.okta.register_group(
+            register_group_response = await self.client.auth.okta.register_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_group_response: %s' % register_group_response)
             self.assertEqual(
-                first=register_group_response.status_code,
+                first=register_group_response.status,
                 second=204,
             )
 
@@ -360,22 +361,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_group(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_read_group(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_group_response = self.client.auth.okta.register_group(
+            register_group_response = await self.client.auth.okta.register_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_group_response: %s' % register_group_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.read_group(
+                await self.client.auth.okta.read_group(
                     name=self.TEST_GROUP,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -384,7 +385,7 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_group_response = self.client.auth.okta.read_group(
+            read_group_response = await self.client.auth.okta.read_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -403,22 +404,22 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
             configure_first=False,
         ),
     ])
-    def test_delete_group(self, label, configure_first=True, raises=None, exception_msg=''):
+    async def test_delete_group(self, label, configure_first=True, raises=None, exception_msg=''):
         if configure_first:
-            configure_response = self.client.auth.okta.configure(
+            configure_response = await self.client.auth.okta.configure(
                 org_name=self.TEST_ORG_NAME,
                 base_url=self.TEST_BASE_URL,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
-            register_group_response = self.client.auth.okta.register_group(
+            register_group_response = await self.client.auth.okta.register_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('register_group_response: %s' % register_group_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.auth.okta.delete_group(
+                await self.client.auth.okta.delete_group(
                     name=self.TEST_GROUP,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -427,12 +428,12 @@ class TestOkta(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_group_response = self.client.auth.okta.delete_group(
+            delete_group_response = await self.client.auth.okta.delete_group(
                 name=self.TEST_GROUP,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_group_response: %s' % delete_group_response)
             self.assertEqual(
-                first=delete_group_response.status_code,
+                first=delete_group_response.status,
                 second=204,
             )

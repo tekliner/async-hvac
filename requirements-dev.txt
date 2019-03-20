@@ -9,3 +9,5 @@ aioresponses
 mock
 parameterized
 requests
+py4j
+python-ldap-test
