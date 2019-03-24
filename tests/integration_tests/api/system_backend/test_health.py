@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized, param
 from tests.utils import create_client
@@ -9,10 +9,11 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 class TestHealth(HvacIntegrationTestCase, TestCase):
     enable_vault_ha = True
 
-    def tearDown(self):
+    async def tearDown(self):
         # If one of our test cases left the Vault cluster sealed, unseal it here.
         self.manager.unseal()
-        super(TestHealth, self).tearDown()
+        await super(TestHealth, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         param(
@@ -53,7 +54,7 @@ class TestHealth(HvacIntegrationTestCase, TestCase):
             method='GET'
         ),
     ])
-    def test_read_health_status(self, label, method='HEAD', use_standby_node=False, expected_status_code=200, seal_first=False, ha_required=False):
+    async def test_read_health_status(self, label, method='HEAD', use_standby_node=False, expected_status_code=200, seal_first=False, ha_required=False):
         """Test the Health system backend class's "read_health_status" method.
 
         :param label: Label for a given parameterized test case.
@@ -78,20 +79,20 @@ class TestHealth(HvacIntegrationTestCase, TestCase):
             self.manager.restart_vault_cluster()
 
         # Grab a Vault node address for our desired standby status and create a one-off client configured for that address.
-        vault_addr = self.get_vault_addr_by_standby_status(standby_status=use_standby_node)
+        vault_addr = await self.get_vault_addr_by_standby_status(standby_status=use_standby_node)
         logging.debug('vault_addr being used: %s' % vault_addr)
-        client = create_client(url=vault_addr)
+        async with create_client(url=vault_addr) as client:
 
-        read_status_response = client.sys.read_health_status(
-            method=method,
-        )
-        logging.debug('read_status_response: %s' % read_status_response)
-        if method == 'HEAD':
-            self.assertEqual(
-                first=read_status_response.status_code,
-                second=expected_status_code,
+            read_status_response = await client.sys.read_health_status(
+                method=method,
             )
-        else:
-            self.assertTrue(
-                expr=read_status_response['initialized']
-            )
+            logging.debug('read_status_response: %s' % read_status_response)
+            if method == 'HEAD':
+                self.assertEqual(
+                    first=read_status_response.status,
+                    second=expected_status_code,
+                )
+            else:
+                self.assertTrue(
+                    expr=read_status_response['initialized']
+                )

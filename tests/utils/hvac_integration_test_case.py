@@ -94,7 +94,7 @@ class HvacIntegrationTestCase(object):
             expected_ttl = 0
         return expected_ttl
 
-    def prep_policy(self, name):
+    async def prep_policy(self, name):
         """Add a common policy used by a subset of integration test cases."""
         text = """
         path "sys" {
@@ -112,10 +112,10 @@ class HvacIntegrationTestCase(object):
                     'policy': 'write'}
             }
         }
-        self.client.set_policy(name, text)
+        await self.client.set_policy(name, text)
         return text, obj
 
-    def configure_pki(self, common_name='hvac.com', role_name='my-role', mount_point='pki'):
+    async def configure_pki(self, common_name='hvac.com', role_name='my-role', mount_point='pki'):
         """Helper function to configure a pki backend for integration tests that need to work with lease IDs.
 
         :param common_name: Common name to configure in the pki backend
@@ -127,22 +127,22 @@ class HvacIntegrationTestCase(object):
         :return: Nothing.
         :rtype: None.
         """
-        if '{path}/'.format(path=mount_point) in self.client.list_secret_backends():
-            self.client.disable_secret_backend(mount_point)
+        if '{path}/'.format(path=mount_point) in await self.client.list_secret_backends():
+            await self.client.disable_secret_backend(mount_point)
 
-        self.client.enable_secret_backend(backend_type='pki', mount_point=mount_point)
+        await self.client.enable_secret_backend(backend_type='pki', mount_point=mount_point)
 
-        self.client.write(
+        await self.client.write(
             path='{path}/root/generate/internal'.format(path=mount_point),
             common_name=common_name,
             ttl='8760h',
         )
-        self.client.write(
+        await self.client.write(
             path='{path}/config/urls'.format(path=mount_point),
             issuing_certificates="http://localhost:8200/v1/pki/ca",
             crl_distribution_points="http://localhost:8200/v1/pki/crl",
         )
-        self.client.write(
+        await self.client.write(
             path='{path}/roles/{name}'.format(path=mount_point, name=role_name),
             allowed_domains=common_name,
             allow_subdomains=True,
@@ -150,15 +150,15 @@ class HvacIntegrationTestCase(object):
             max_ttl='72h',
         )
 
-    def disable_pki(self, mount_point='pki'):
+    async def disable_pki(self, mount_point='pki'):
         """Disable a previously configured pki backend.
 
         :param mount_point: The path the pki backend is mounted under.
         :type mount_point: str
         """
-        self.client.disable_secret_backend(mount_point)
+        await self.client.disable_secret_backend(mount_point)
 
-    def get_vault_addr_by_standby_status(self, standby_status=True):
+    async def get_vault_addr_by_standby_status(self, standby_status=True):
         """Get an address for a Vault HA node currently in standby.
 
         :param standby_status: Value of the 'standby' key from the health status response to match.
@@ -166,8 +166,9 @@ class HvacIntegrationTestCase(object):
         :return: Standby Vault address.
         :rtype: str
         """
-        vault_addresses = self.manager.get_active_vault_addresses()
+        vault_addresses = await self.manager.get_active_vault_addresses()
         for vault_address in vault_addresses:
-            health_status = create_client(url=vault_address).sys.read_health_status(method='GET')
-            if health_status['standby'] == standby_status:
-                return vault_address
+            async with create_client(url=vault_address) as client:
+                health_status = await client.sys.read_health_status(method='GET')
+                if health_status['standby'] == standby_status:
+                    return vault_address

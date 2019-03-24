@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized, param
 
@@ -10,32 +10,33 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 class TestAudit(HvacIntegrationTestCase, TestCase):
     TEST_AUDIT_DEVICE_PATH = 'test-tempfile'
 
-    def tearDown(self):
-        self.client.sys.disable_audit_device(
+    async def tearDown(self):
+        await self.client.sys.disable_audit_device(
             path=self.TEST_AUDIT_DEVICE_PATH
         )
+        await self.client.close()
 
-    def test_audit_backend_manipulation(self):
+    async def test_audit_backend_manipulation(self):
         options = {
             'path': '/tmp/vault.audit.log'
         }
 
-        self.client.sys.enable_audit_device(
+        await self.client.sys.enable_audit_device(
             device_type='file',
             options=options,
             path=self.TEST_AUDIT_DEVICE_PATH,
         )
         self.assertIn(
             member='%s/' % self.TEST_AUDIT_DEVICE_PATH,
-            container=self.client.sys.list_enabled_audit_devices()['data'],
+            container=(await self.client.sys.list_enabled_audit_devices())['data'],
         )
 
-        self.client.sys.disable_audit_device(
+        await self.client.sys.disable_audit_device(
             path=self.TEST_AUDIT_DEVICE_PATH,
         )
         self.assertNotIn(
             member='%s/' % self.TEST_AUDIT_DEVICE_PATH,
-            container=self.client.sys.list_enabled_audit_devices()['data'],
+            container=(await self.client.sys.list_enabled_audit_devices())['data'],
         )
 
     @parameterized.expand([
@@ -49,12 +50,12 @@ class TestAudit(HvacIntegrationTestCase, TestCase):
             exception_message='unknown audit backend',
         ),
     ])
-    def test_audit_hash(self, label, enable_first=True, test_input='hvac-rox', raises=None, exception_message=''):
+    async def test_audit_hash(self, label, enable_first=True, test_input='hvac-rox', raises=None, exception_message=''):
         if enable_first:
             options = {
                 'path': '/tmp/vault.audit.log'
             }
-            self.client.sys.enable_audit_device(
+            await self.client.sys.enable_audit_device(
                 device_type='file',
                 options=options,
                 path=self.TEST_AUDIT_DEVICE_PATH,
@@ -62,7 +63,7 @@ class TestAudit(HvacIntegrationTestCase, TestCase):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.sys.calculate_hash(
+                await self.client.sys.calculate_hash(
                     path=self.TEST_AUDIT_DEVICE_PATH,
                     input_to_hash=test_input,
                 )
@@ -72,7 +73,7 @@ class TestAudit(HvacIntegrationTestCase, TestCase):
                     container=str(cm.exception),
                 )
         else:
-            audit_hash_response = self.client.sys.calculate_hash(
+            audit_hash_response = await self.client.sys.calculate_hash(
                 path=self.TEST_AUDIT_DEVICE_PATH,
                 input_to_hash=test_input,
             )

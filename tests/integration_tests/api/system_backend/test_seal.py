@@ -1,40 +1,43 @@
-from unittest import TestCase
+from asynctest import TestCase
 
 from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 
 
 class TestSeal(HvacIntegrationTestCase, TestCase):
 
-    def test_unseal_multi(self):
+    async def tearDown(self):
+        await self.client.close()
+
+    async def test_unseal_multi(self):
         cls = type(self)
 
-        self.client.sys.seal()
+        await self.client.sys.seal()
 
         keys = cls.manager.keys
 
-        result = self.client.sys.submit_unseal_keys(keys[0:2])
+        result = await self.client.sys.submit_unseal_keys(keys[0:2])
 
         self.assertTrue(result['sealed'])
         self.assertEqual(result['progress'], 2)
 
-        result = self.client.sys.submit_unseal_key(reset=True)
+        result = await self.client.sys.submit_unseal_key(reset=True)
         self.assertEqual(result['progress'], 0)
-        result = self.client.sys.submit_unseal_keys(keys[1:3])
+        result = await self.client.sys.submit_unseal_keys(keys[1:3])
         self.assertTrue(result['sealed'])
         self.assertEqual(result['progress'], 2)
-        self.client.sys.submit_unseal_keys(keys[0:1])
-        result = self.client.sys.submit_unseal_keys(keys[2:3])
+        await self.client.sys.submit_unseal_keys(keys[0:1])
+        result = await self.client.sys.submit_unseal_keys(keys[2:3])
         self.assertFalse(result['sealed'])
 
-    def test_seal_unseal(self):
+    async def test_seal_unseal(self):
         cls = type(self)
 
-        self.assertFalse(self.client.sys.is_sealed())
+        self.assertFalse(await self.client.sys.is_sealed())
 
-        self.client.sys.seal()
+        await self.client.sys.seal()
 
-        self.assertTrue(self.client.sys.is_sealed())
+        self.assertTrue(await self.client.sys.is_sealed())
 
         cls.manager.unseal()
 
-        self.assertFalse(self.client.sys.is_sealed())
+        self.assertFalse(await self.client.sys.is_sealed())

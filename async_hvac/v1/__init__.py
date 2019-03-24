@@ -89,7 +89,7 @@ class AsyncClient(object):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.close()
+        await self._adapter.close()
 
     @property
     def adapter(self):
@@ -2137,14 +2137,14 @@ class AsyncClient(object):
         api_path = '/v1/sys/policy/{name}'.format(
             name=name,
         )
-        self._adapter.put(api_path, json=params)
+        return self._adapter.put(api_path, json=params)
 
     @utils.deprecated_method(
         to_be_removed_in_version='0.9.0',
         new_method=api.SystemBackend.delete_policy,
     )
     def delete_policy(self, name):
-        self.sys.delete_policy(name=name)
+        return self.sys.delete_policy(name=name)
 
     @utils.deprecated_method(
         to_be_removed_in_version='0.9.0',
@@ -2158,7 +2158,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.seal,
     )
     def seal(self):
-        self.sys.seal()
+        return self.sys.seal()
 
     @utils.deprecated_method(
         to_be_removed_in_version='0.9.0',
@@ -2303,7 +2303,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.rotate_encryption_key,
     )
     def rotate(self):
-        self.sys.rotate_encryption_key()
+        return self.sys.rotate_encryption_key()
 
     @utils.deprecated_method(
         to_be_removed_in_version='0.9.0',
@@ -2329,7 +2329,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.rekey,
     )
     def rekey(self, key, nonce=None):
-        self.sys.rekey(
+        return self.sys.rekey(
             key=key,
             nonce=nonce,
         )
@@ -2470,7 +2470,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.enable_audit_device,
     )
     def enable_audit_backend(self, backend_type, description=None, options=None, name=None):
-        self.sys.enable_audit_device(
+        return self.sys.enable_audit_device(
             device_type=backend_type,
             description=description,
             options=options,
@@ -2482,7 +2482,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.disable_audit_device,
     )
     def disable_audit_backend(self, name):
-        self.sys.disable_audit_device(
+        return self.sys.disable_audit_device(
             path=name,
         )
 

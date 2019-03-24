@@ -130,4 +130,5 @@ class ServerManager(object):
         """Unseal the vault server process."""
         vault_addresses = self.get_active_vault_addresses()
         for vault_address in vault_addresses:
-            create_client(sync=True, url=vault_address).sys.submit_unseal_keys(self.keys)
+            with create_client(sync=True, url=vault_address) as client:
+                client.sys.submit_unseal_keys(self.keys)
