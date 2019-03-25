@@ -3,7 +3,8 @@ from asynctest import TestCase
 from parameterized import parameterized
 
 from async_hvac import AsyncClient
-from async_hvac.tests.util import RequestsMocker
+
+from tests.utils import requests_mock
 
 
 class TestAwsEc2Methods(TestCase):
@@ -13,7 +14,7 @@ class TestAwsEc2Methods(TestCase):
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_auth_ec2(self, test_label, mount_point, requests_mocker):
         mock_response = {
             'auth': {
@@ -51,27 +52,26 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             json=mock_response
         )
-        client = AsyncClient()
-
-        if mount_point is None:
-            actual_response = await client.auth_ec2(
-                pkcs7='mock_pcks7'
-            )
-        else:
-            actual_response = await client.auth_ec2(
-                pkcs7='mock_pcks7',
-                mount_point=mount_point
-            )
-
-        # ensure we received our mock response data back successfully
-        self.assertEqual(mock_response, actual_response)
-        await client.close()
+        async with AsyncClient() as client:
+    
+            if mount_point is None:
+                actual_response = await client.auth_ec2(
+                    pkcs7='mock_pcks7'
+                )
+            else:
+                actual_response = await client.auth_ec2(
+                    pkcs7='mock_pcks7',
+                    mount_point=mount_point
+                )
+    
+            # ensure we received our mock response data back successfully
+            self.assertEqual(mock_response, actual_response)
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_vault_ec2_client_configuration(self, test_label, mount_point, requests_mocker):
         test_access_key = 'AKIAABCDEFGUE1234567'
         test_secret_key = 'thisisasecretyall'
@@ -84,31 +84,30 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
-
-        if mount_point is None:
-            actual_response = await client.create_vault_ec2_client_configuration(
-                access_key=test_access_key,
-                secret_key=test_secret_key,
+        async with AsyncClient() as client:
+    
+            if mount_point is None:
+                actual_response = await client.create_vault_ec2_client_configuration(
+                    access_key=test_access_key,
+                    secret_key=test_secret_key,
+                )
+            else:
+                actual_response = await client.create_vault_ec2_client_configuration(
+                    access_key=test_access_key,
+                    secret_key=test_secret_key,
+                    mount_point=mount_point
+                )
+    
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status
             )
-        else:
-            actual_response = await client.create_vault_ec2_client_configuration(
-                access_key=test_access_key,
-                secret_key=test_secret_key,
-                mount_point=mount_point
-            )
-
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status
-        )
-        await client.close()
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_vault_ec2_client_configuration(self, test_label, mount_point, requests_mocker):
         mock_response = {
           "data": {
@@ -130,26 +129,25 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.get_vault_ec2_client_configuration()
-        else:
-            actual_response = await client.get_vault_ec2_client_configuration(
-                mount_point=mount_point
+            if mount_point is None:
+                actual_response = await client.get_vault_ec2_client_configuration()
+            else:
+                actual_response = await client.get_vault_ec2_client_configuration(
+                    mount_point=mount_point
+                )
+
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
             )
-
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_delete_vault_ec2_client_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/config/client'.format(
@@ -160,26 +158,25 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.delete_vault_ec2_client_configuration()
-        else:
-            actual_response = await client.delete_vault_ec2_client_configuration(
-                mount_point=mount_point
+            if mount_point is None:
+                actual_response = await client.delete_vault_ec2_client_configuration()
+            else:
+                actual_response = await client.delete_vault_ec2_client_configuration(
+                    mount_point=mount_point
+                )
+
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
             )
-
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
 
     @parameterized.expand([
         ("default mount point", None, 'my-cool-cert-1'),
         ("custom mount point", 'aws-ec2', 'my-cool-cert-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_vault_ec2_certificate_configuration(self, test_label, mount_point, cert_name, requests_mocker):
         test_cert_info = 'this is some test cert info'
         expected_status_code = 204
@@ -192,31 +189,30 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.create_vault_ec2_certificate_configuration(
-                cert_name=cert_name,
-                aws_public_cert=test_cert_info,
-            )
-        else:
-            actual_response = await client.create_vault_ec2_certificate_configuration(
-                cert_name=cert_name,
-                aws_public_cert=test_cert_info,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.create_vault_ec2_certificate_configuration(
+                    cert_name=cert_name,
+                    aws_public_cert=test_cert_info,
+                )
+            else:
+                actual_response = await client.create_vault_ec2_certificate_configuration(
+                    cert_name=cert_name,
+                    aws_public_cert=test_cert_info,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", None, 'my-cool-cert-1'),
         ("custom mount point", 'aws-ec2', 'my-cool-cert-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_vault_ec2_certificate_configuration(self, test_label, mount_point, cert_name, requests_mocker):
         mock_response = {
             "data": {
@@ -235,29 +231,28 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.get_vault_ec2_certificate_configuration(
-                cert_name=cert_name,
-            )
-        else:
-            actual_response = await client.get_vault_ec2_certificate_configuration(
-                cert_name=cert_name,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.get_vault_ec2_certificate_configuration(
+                    cert_name=cert_name,
+                )
+            else:
+                actual_response = await client.get_vault_ec2_certificate_configuration(
+                    cert_name=cert_name,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
+            )
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_list_vault_ec2_certificate_configurations(self, test_label, mount_point, requests_mocker):
         mock_response = {
             "data": {
@@ -277,26 +272,25 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.list_vault_ec2_certificate_configurations()
-        else:
-            actual_response = await client.list_vault_ec2_certificate_configurations(
-                mount_point=mount_point
+            if mount_point is None:
+                actual_response = await client.list_vault_ec2_certificate_configurations()
+            else:
+                actual_response = await client.list_vault_ec2_certificate_configurations(
+                    mount_point=mount_point
+                )
+
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
             )
-
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
 
     @parameterized.expand([
         ("default mount point", None, 'my-role-1'),
         ("custom mount point", 'aws-ec2', 'my-role-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_ec2_role(self, test_label, mount_point, role_name, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
@@ -308,29 +302,28 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.create_ec2_role(
-                role=role_name
-            )
-        else:
-            actual_response = await client.create_ec2_role(
-                role=role_name,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.create_ec2_role(
+                    role=role_name
+                )
+            else:
+                actual_response = await client.create_ec2_role(
+                    role=role_name,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", None, 'my-role-1'),
         ("custom mount point", 'aws-ec2', 'my-role-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_ec2_role(self, test_label, mount_point, role_name, requests_mocker):
         mock_response = {
             "data": {
@@ -357,29 +350,28 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.get_ec2_role(
-                role=role_name
-            )
-        else:
-            actual_response = await client.get_ec2_role(
-                role=role_name,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.get_ec2_role(
+                    role=role_name
+                )
+            else:
+                actual_response = await client.get_ec2_role(
+                    role=role_name,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
+            )
 
     @parameterized.expand([
         ("default mount point", None, 'my-role-1'),
         ("custom mount point", 'aws-ec2', 'my-role-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_delete_ec2_role(self, test_label, mount_point, role_name, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
@@ -391,29 +383,28 @@ class TestAwsEc2Methods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.delete_ec2_role(
-                role=role_name
-            )
-        else:
-            actual_response = await client.delete_ec2_role(
-                role=role_name,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.delete_ec2_role(
+                    role=role_name
+                )
+            else:
+                actual_response = await client.delete_ec2_role(
+                    role=role_name,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", 'aws-ec2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_list_ec2_roles(self, test_label, mount_point, requests_mocker):
         mock_response = {
             "data": {
@@ -433,26 +424,25 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.list_ec2_roles()
-        else:
-            actual_response = await client.list_ec2_roles(
-                mount_point=mount_point
+            if mount_point is None:
+                actual_response = await client.list_ec2_roles()
+            else:
+                actual_response = await client.list_ec2_roles(
+                    mount_point=mount_point
+                )
+
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
             )
-
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
 
     @parameterized.expand([
         ("default mount point", None, 'my-role-1'),
         ("custom mount point", 'aws-ec2', 'my-role-2'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_ec2_role_tag(self, test_label, mount_point, role_name, requests_mocker):
         mock_response = {
             "data": {
@@ -471,20 +461,19 @@ class TestAwsEc2Methods(TestCase):
             json=mock_response,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.create_ec2_role_tag(
-                role=role_name,
-            )
-        else:
-            actual_response = await client.create_ec2_role_tag(
-                role=role_name,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.create_ec2_role_tag(
+                    role=role_name,
+                )
+            else:
+                actual_response = await client.create_ec2_role_tag(
+                    role=role_name,
+                    mount_point=mount_point
+                )
 
-        self.assertEqual(
-            first=mock_response,
-            second=await actual_response.json(),
-        )
-        await client.close()
+            self.assertEqual(
+                first=mock_response,
+                second=await actual_response.json(),
+            )

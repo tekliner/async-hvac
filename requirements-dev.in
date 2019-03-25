@@ -1,0 +1,13 @@
+tox
+coverage
+nose
+asynctest
+semantic_version
+avakas
+requests-mock
+aioresponses
+mock
+parameterized
+requests
+py4j
+python-ldap-test

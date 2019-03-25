@@ -3,7 +3,8 @@ from asynctest import TestCase
 from parameterized import parameterized
 
 from async_hvac import AsyncClient
-from async_hvac.tests.util import RequestsMocker
+
+from tests.utils import requests_mock
 
 
 class TestGcpMethods(TestCase):
@@ -13,7 +14,7 @@ class TestGcpMethods(TestCase):
         ("default mount point", "custom_role", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", None),
         ("custom mount point", "custom_role", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", "gcp-not-default")
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_auth_gcp(self, test_label, test_role, test_jwt, mount_point, requests_mocker):
         mock_response = {
             'auth': {
@@ -46,20 +47,19 @@ class TestGcpMethods(TestCase):
             url=mock_url,
             json=mock_response
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        if mount_point is None:
-            actual_response = await client.auth_gcp(
-                role=test_role,
-                jwt=test_jwt
-            )
-        else:
-            actual_response = await client.auth_gcp(
-                role=test_role,
-                jwt=test_jwt,
-                mount_point=mount_point
-            )
+            if mount_point is None:
+                actual_response = await client.auth_gcp(
+                    role=test_role,
+                    jwt=test_jwt
+                )
+            else:
+                actual_response = await client.auth_gcp(
+                    role=test_role,
+                    jwt=test_jwt,
+                    mount_point=mount_point
+                )
 
-        # ensure we received our mock response data back successfully
-        self.assertEqual(mock_response, actual_response)
-        await client.close()
+            # ensure we received our mock response data back successfully
+            self.assertEqual(mock_response, actual_response)

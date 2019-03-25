@@ -166,7 +166,7 @@ class HvacIntegrationTestCase(object):
         :return: Standby Vault address.
         :rtype: str
         """
-        vault_addresses = await self.manager.get_active_vault_addresses()
+        vault_addresses = self.manager.get_active_vault_addresses()
         for vault_address in vault_addresses:
             async with create_client(url=vault_address) as client:
                 health_status = await client.sys.read_health_status(method='GET')

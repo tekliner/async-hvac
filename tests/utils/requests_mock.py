@@ -24,20 +24,27 @@ class Mocker(aioresponses):
                             **kwargs: Dict) -> 'ClientResponse':
         """Return mocked response object or raise connection error."""
         while True:
-            self.request_history.append(HistoryItem(url))
+            if 'params' in kwargs:
+                for key in kwargs['params'].keys():
+                    kwargs['params'][key] = str(kwargs['params'][key]).lower()
             resp = await super(Mocker, self)._request_mock(orig_self, method, url, *args, **kwargs)
             if resp.status in (301, 302, 303, 307, 308):
                 url = resp.headers.get(hdrs.LOCATION)
                 continue
             break
 
+        self.request_history.append(HistoryItem(url, kwargs.get('json')))
         return resp
 
 
 class HistoryItem(object):
 
-    def __init__(self, url):
+    def __init__(self, url, json):
         self.url = url
+        self._json = json
+
+    def json(self):
+        return self._json
 
 
 mock = Mocker

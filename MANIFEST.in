@@ -1,1 +1,1 @@
-include async_hvac/version
+prune tests/

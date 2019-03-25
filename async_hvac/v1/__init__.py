@@ -1299,7 +1299,7 @@ class AsyncClient(object):
         """
         return await (await self._adapter.get('/v1/auth/{0}/role/{1}'.format(mount_point, role_name))).json()
 
-    def create_role_secret_id(self, role_name, meta=None, cidr_list=None, wrap_ttl=None, mount_point='approle'):
+    async def create_role_secret_id(self, role_name, meta=None, cidr_list=None, wrap_ttl=None, mount_point='approle'):
         """POST /auth/<mount_point>/role/<role name>/secret-id
 
         :param role_name:
@@ -1322,7 +1322,7 @@ class AsyncClient(object):
             params['metadata'] = json.dumps(meta)
         if cidr_list is not None:
             params['cidr_list'] = cidr_list
-        return self._adapter.post(url, json=params, wrap_ttl=wrap_ttl).json()
+        return await (await self._adapter.post(url, json=params, wrap_ttl=wrap_ttl)).json()
 
     async def get_role_secret_id(self, role_name, secret_id, mount_point='approle'):
         """POST /auth/<mount_point>/role/<role name>/secret-id/lookup

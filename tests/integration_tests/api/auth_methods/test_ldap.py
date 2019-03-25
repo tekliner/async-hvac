@@ -420,7 +420,7 @@ class TestLdap(HvacIntegrationTestCase, TestCase):
         )
 
         if attach_policy:
-            self.prep_policy(test_policy_name)
+            await self.prep_policy(test_policy_name)
             await self.client.auth.ldap.create_or_update_group(
                 name=LDAP_GROUP_NAME,
                 policies=[test_policy_name],

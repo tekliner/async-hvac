@@ -1,13 +1,14 @@
 from asynctest import TestCase
 
 from async_hvac import AsyncClient
-from async_hvac.tests.util import RequestsMocker
+
+from tests.utils import requests_mock
 
 
 class TestAuthMethods(TestCase):
     """Tests for methods related to Vault sys/auth routes."""
 
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_tune_auth_backend(self, requests_mocker):
         expected_status_code = 204
         test_backend_type = 'approle'
@@ -18,29 +19,27 @@ class TestAuthMethods(TestCase):
             url='http://localhost:8200/v1/sys/auth/{0}/tune'.format(test_mount_point),
             status_code=expected_status_code,
         )
-        client = AsyncClient()
-        actual_response = await client.tune_auth_backend(
-            backend_type=test_backend_type,
-            mount_point=test_mount_point,
-            description=test_description,
-        )
+        async with AsyncClient() as client:
+            actual_response = await client.tune_auth_backend(
+                backend_type=test_backend_type,
+                mount_point=test_mount_point,
+                description=test_description,
+            )
+    
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
+    
+            actual_request_params = requests_mocker.request_history[0].json()
+    
+            # Ensure we sent through an optional tune parameter as expected
+            self.assertEqual(
+                first=test_description,
+                second=actual_request_params['description'],
+            )
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-
-        actual_request_params = requests_mocker.requests[
-            ('post', 'http://localhost:8200/v1/sys/auth/{0}/tune'.format(test_mount_point))][0].kwargs['json']
-
-        # Ensure we sent through an optional tune parameter as expected
-        self.assertEqual(
-            first=test_description,
-            second=actual_request_params['description'],
-        )
-        await client.close()
-
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_auth_backend_tuning(self, requests_mocker):
         expected_status_code = 200
         test_backend_type = 'approle'
@@ -68,14 +67,13 @@ class TestAuthMethods(TestCase):
             status_code=expected_status_code,
             json=mock_response
         )
-        client = AsyncClient()
-        actual_response = await client.get_auth_backend_tuning(
-            backend_type=test_backend_type,
-            mount_point=test_mount_point,
-        )
+        async with AsyncClient() as client:
+            actual_response = await client.get_auth_backend_tuning(
+                backend_type=test_backend_type,
+                mount_point=test_mount_point,
+            )
 
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
+            self.assertEqual(
+                first=mock_response,
+                second=actual_response,
+            )

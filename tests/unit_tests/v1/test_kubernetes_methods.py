@@ -3,17 +3,18 @@ from asynctest import TestCase
 from parameterized import parameterized
 
 from async_hvac import AsyncClient
-from async_hvac.tests.util import RequestsMocker
+
+from tests.utils import requests_mock
 
 
 class TestKubernetesMethods(TestCase):
     """Unit tests providing coverage for Kubernetes auth backend-related methods/routes."""
 
     @parameterized.expand([
-        ("default mount point", None, 'localhost:80', ['test_key']),
+        ("default mount point", None, '127.0.0.1:80', ['test_key']),
         ("custom mount point", "k8s", 'some_k8s_host.com', ['test_key']),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_kubernetes_configuration(self, test_label, mount_point, kubernetes_host, pem_keys, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/config'.format(
@@ -24,35 +25,34 @@ class TestKubernetesMethods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict(
-            kubernetes_host=kubernetes_host,
-            pem_keys=pem_keys,
-        )
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
-
-        actual_response = await client.create_kubernetes_configuration(**test_arguments)
-
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            test_arguments = dict(
+                kubernetes_host=kubernetes_host,
+                pem_keys=pem_keys,
+            )
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
+    
+            actual_response = await client.create_kubernetes_configuration(**test_arguments)
+    
+            self.assertEqual(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", None),
         ("custom mount point", "k8s"),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_kubernetes_configuration(self, test_label, mount_point, requests_mocker):
         expected_status_code = 200
         mock_response = {
             'auth': None,
             'data': {
                 'kubernetes_ca_cert': '',
-                'kubernetes_host': 'localhost:80',
+                'kubernetes_host': '127.0.0.1:80',
                 'pem_keys': ['some key'],
                 'token_reviewer_jwt': ''
             },
@@ -72,25 +72,24 @@ class TestKubernetesMethods(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict()
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
+            test_arguments = dict()
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
 
-        actual_response = await client.get_kubernetes_configuration(**test_arguments)
+            actual_response = await client.get_kubernetes_configuration(**test_arguments)
 
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
+            self.assertEquals(
+                first=mock_response,
+                second=actual_response,
+            )
 
     @parameterized.expand([
         ("default mount point", None, "application1", '*', 'some-namespace'),
         ("custom mount point", "k8s", "application2", 'some-service-account', '*'),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_create_role(self, test_label, mount_point, role_name, bound_service_account_names, bound_service_account_namespaces, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
@@ -102,28 +101,27 @@ class TestKubernetesMethods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict(
-            name=role_name,
-            bound_service_account_names=bound_service_account_names,
-            bound_service_account_namespaces=bound_service_account_namespaces,
-        )
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
-        actual_response = await client.create_kubernetes_role(**test_arguments)
+            test_arguments = dict(
+                name=role_name,
+                bound_service_account_names=bound_service_account_names,
+                bound_service_account_namespaces=bound_service_account_namespaces,
+            )
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
+            actual_response = await client.create_kubernetes_role(**test_arguments)
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            self.assertEquals(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", None, "application1"),
         ("custom mount point", "k8s", "application2"),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_get_role(self, test_label, mount_point, role_name, requests_mocker):
         expected_status_code = 200
         mock_response = {
@@ -158,27 +156,26 @@ class TestKubernetesMethods(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict(
-            name=role_name,
-        )
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
+            test_arguments = dict(
+                name=role_name,
+            )
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
 
-        actual_response = await client.get_kubernetes_role(**test_arguments)
+            actual_response = await client.get_kubernetes_role(**test_arguments)
 
-        self.assertEqual(
-            first=mock_response,
-            second=actual_response,
-        )
-        await client.close()
+            self.assertEquals(
+                first=mock_response,
+                second=actual_response,
+            )
 
     @parameterized.expand([
         ("default mount point", None, ['test-role-1', 'test-role-2']),
         ("custom mount point", "k8s", ['test-role']),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_list_kubernetes_roles(self, test_label, mount_point, role_names, requests_mocker):
         expected_status_code = 200
         mock_response = {
@@ -202,22 +199,21 @@ class TestKubernetesMethods(TestCase):
             status_code=expected_status_code,
             json=mock_response,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict()
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
-        actual_response = await client.list_kubernetes_roles(**test_arguments)
+            test_arguments = dict()
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
+            actual_response = await client.list_kubernetes_roles(**test_arguments)
 
-        # ensure we received our mock response data back successfully
-        self.assertEqual(mock_response, actual_response)
-        await client.close()
+            # ensure we received our mock response data back successfully
+            self.assertEqual(mock_response, actual_response)
 
     @parameterized.expand([
         ("default mount point", None, "application1"),
         ("custom mount point", "k8s", "application2"),
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_delete_kubernetes_role(self, test_label, mount_point, role_name, requests_mocker):
         expected_status_code = 204
         mock_url = 'http://localhost:8200/v1/auth/{0}/role/{1}'.format(
@@ -229,27 +225,26 @@ class TestKubernetesMethods(TestCase):
             url=mock_url,
             status_code=expected_status_code,
         )
-        client = AsyncClient()
+        async with AsyncClient() as client:
 
-        test_arguments = dict(
-            role=role_name,
-        )
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
+            test_arguments = dict(
+                role=role_name,
+            )
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
 
-        actual_response = await client.delete_kubernetes_role(**test_arguments)
+            actual_response = await client.delete_kubernetes_role(**test_arguments)
 
-        self.assertEqual(
-            first=expected_status_code,
-            second=actual_response.status,
-        )
-        await client.close()
+            self.assertEquals(
+                first=expected_status_code,
+                second=actual_response.status,
+            )
 
     @parameterized.expand([
         ("default mount point", "custom_role", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", None),
         ("custom mount point", "custom_role", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", "gcp-not-default")
     ])
-    @RequestsMocker()
+    @requests_mock.Mocker()
     async def test_auth_kubernetes(self, test_label, test_role, test_jwt, mount_point, requests_mocker):
         mock_response = {
             'auth': {
@@ -284,15 +279,14 @@ class TestKubernetesMethods(TestCase):
             url=mock_url,
             json=mock_response
         )
-        client = AsyncClient()
-        test_arguments = dict(
-            role=test_role,
-            jwt=test_jwt,
-        )
-        if mount_point:
-            test_arguments['mount_point'] = mount_point
-        actual_response = await client.auth_kubernetes(**test_arguments)
+        async with AsyncClient() as client:
+            test_arguments = dict(
+                role=test_role,
+                jwt=test_jwt,
+            )
+            if mount_point:
+                test_arguments['mount_point'] = mount_point
+            actual_response = await client.auth_kubernetes(**test_arguments)
 
-        # ensure we received our mock response data back successfully
-        self.assertEqual(mock_response, actual_response)
-        await client.close()
+            # ensure we received our mock response data back successfully
+            self.assertEqual(mock_response, actual_response)
