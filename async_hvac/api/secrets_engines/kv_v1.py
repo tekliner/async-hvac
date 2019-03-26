@@ -13,7 +13,7 @@ class KvV1(VaultApiBase):
     Reference: https://www.vaultproject.io/api/secrets/kv/kv-v1.html
     """
 
-    def read_secret(self, path, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_secret(self, path, mount_point=DEFAULT_MOUNT_POINT):
         """Retrieve the secret at the specified location.
 
         Supported methods:
@@ -28,12 +28,12 @@ class KvV1(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def list_secrets(self, path, mount_point=DEFAULT_MOUNT_POINT):
+    async def list_secrets(self, path, mount_point=DEFAULT_MOUNT_POINT):
         """Return a list of key names at the specified location.
 
         Folders are suffixed with /. The input must be a folder; list on a file will not return a value. Note that no
@@ -52,12 +52,12 @@ class KvV1(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def create_or_update_secret(self, path, secret, method=None, mount_point=DEFAULT_MOUNT_POINT):
+    async def create_or_update_secret(self, path, secret, method=None, mount_point=DEFAULT_MOUNT_POINT):
         """Store a secret at the specified location.
 
         If the value does not yet exist, the calling token must have an ACL policy granting the create capability.
@@ -86,7 +86,7 @@ class KvV1(VaultApiBase):
             # If no method was selected by the caller, use the result of a `read_secret()` call to determine if we need
             # to perform an update (PUT) or creation (POST) request.
             try:
-                self.read_secret(
+                await self.read_secret(
                     path=path,
                     mount_point=mount_point,
                 )
@@ -96,14 +96,14 @@ class KvV1(VaultApiBase):
 
         if method == 'POST':
             api_path = '/v1/{mount_point}/{path}'.format(mount_point=mount_point, path=path)
-            return self._adapter.post(
+            return await self._adapter.post(
                 url=api_path,
                 json=secret,
             )
 
         elif method == 'PUT':
             api_path = '/v1/{mount_point}/{path}'.format(mount_point=mount_point, path=path)
-            return self._adapter.post(
+            return await self._adapter.post(
                 url=api_path,
                 json=secret,
             )

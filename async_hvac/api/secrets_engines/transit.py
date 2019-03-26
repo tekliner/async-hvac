@@ -76,7 +76,7 @@ class Transit(VaultApiBase):
             json=params,
         )
 
-    def read_key(self, name, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_key(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Read information about a named encryption key.
 
         The keys object shows the creation time of each key version; the values are not the keys themselves. Depending
@@ -97,12 +97,12 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def list_keys(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def list_keys(self, mount_point=DEFAULT_MOUNT_POINT):
         """List keys.
 
         Only the key names are returned (not the actual keys themselves).
@@ -116,10 +116,10 @@ class Transit(VaultApiBase):
         :rtype: requests.Response
         """
         api_path = '/v1/{mount_point}/keys'.format(mount_point=mount_point)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path
         )
-        return response.json()
+        return await response.json()
 
     def delete_key(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Delete a named encryption key.
@@ -222,7 +222,7 @@ class Transit(VaultApiBase):
             url=api_path,
         )
 
-    def export_key(self, name, key_type, version=None, mount_point=DEFAULT_MOUNT_POINT):
+    async def export_key(self, name, key_type, version=None, mount_point=DEFAULT_MOUNT_POINT):
         """Return the named key.
 
         The keys object shows the value of the key for each version. If version is specified, the specific version will
@@ -261,12 +261,12 @@ class Transit(VaultApiBase):
         )
         if version is not None:
             api_path = self._adapter.urljoin(api_path, version)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def encrypt_data(self, name, plaintext, context="", key_version=0, nonce=None, batch_input=None, type="aes256-gcm96",
+    async def encrypt_data(self, name, plaintext, context="", key_version=0, nonce=None, batch_input=None, type="aes256-gcm96",
                      convergent_encryption="", mount_point=DEFAULT_MOUNT_POINT):
         """Encrypt the provided plaintext using the named key.
 
@@ -325,13 +325,13 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def decrypt_data(self, name, ciphertext, context="", nonce="", batch_input=None, mount_point=DEFAULT_MOUNT_POINT):
+    async def decrypt_data(self, name, ciphertext, context="", nonce="", batch_input=None, mount_point=DEFAULT_MOUNT_POINT):
         """Decrypt the provided ciphertext using the named key.
 
         Supported methods:
@@ -367,13 +367,13 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def rewrap_data(self, name, ciphertext, context="", key_version=None, nonce="", batch_input=None,
+    async def rewrap_data(self, name, ciphertext, context="", key_version=None, nonce="", batch_input=None,
                     mount_point=DEFAULT_MOUNT_POINT):
         """Rewrap the provided ciphertext using the latest version of the named key.
 
@@ -416,13 +416,13 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def generate_data_key(self, name, key_type, context="", nonce="", bits=256, mount_point=DEFAULT_MOUNT_POINT):
+    async def generate_data_key(self, name, key_type, context="", nonce="", bits=256, mount_point=DEFAULT_MOUNT_POINT):
         """Generates a new high-entropy key and the value encrypted with the named key.
 
         Optionally return the plaintext of the key as well. Whether plaintext is returned depends on the path; as a
@@ -477,13 +477,13 @@ class Transit(VaultApiBase):
             key_type=key_type,
             name=name,
         )
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def generate_random_bytes(self, n_bytes=32, output_format="base64", mount_point=DEFAULT_MOUNT_POINT):
+    async def generate_random_bytes(self, n_bytes=32, output_format="base64", mount_point=DEFAULT_MOUNT_POINT):
         """Return high-quality random bytes of the specified length.
 
         Supported methods:
@@ -504,13 +504,13 @@ class Transit(VaultApiBase):
             'format': output_format,
         }
         api_path = '/v1/{mount_point}/random'.format(mount_point=mount_point)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def hash_data(self, hash_input, algorithm="sha2-256", output_format="hex", mount_point=DEFAULT_MOUNT_POINT):
+    async def hash_data(self, hash_input, algorithm="sha2-256", output_format="hex", mount_point=DEFAULT_MOUNT_POINT):
         """Return the cryptographic hash of given data using the specified algorithm.
 
         Supported methods:
@@ -546,13 +546,13 @@ class Transit(VaultApiBase):
             'format': output_format,
         }
         api_path = '/v1/{mount_point}/hash'.format(mount_point=mount_point)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def generate_hmac(self, name, hash_input, key_version=None, algorithm="sha2-256", mount_point=DEFAULT_MOUNT_POINT):
+    async def generate_hmac(self, name, hash_input, key_version=None, algorithm="sha2-256", mount_point=DEFAULT_MOUNT_POINT):
         """Return the digest of given data using the specified hash algorithm and the named key.
 
         The key can be of any type supported by transit; the raw key will be marshaled into bytes to be used for the
@@ -592,13 +592,13 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        resposne = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return resposne.json()
+        return await response.json()
 
-    def sign_data(self, name, hash_input, key_version=None, hash_algorithm="sha2-256", context="", prehashed=False,
+    async def sign_data(self, name, hash_input, key_version=None, hash_algorithm="sha2-256", context="", prehashed=False,
                   signature_algorithm="pss", mount_point=DEFAULT_MOUNT_POINT):
         """Return the cryptographic signature of the given data using the named key and the specified hash algorithm.
 
@@ -659,13 +659,13 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def verify_signed_data(self, name, hash_input, signature=None, hmac=None, hash_algorithm="sha2-256", context="",
+    async def verify_signed_data(self, name, hash_input, signature=None, hmac=None, hash_algorithm="sha2-256", context="",
                            prehashed=False, signature_algorithm="pss", mount_point=DEFAULT_MOUNT_POINT):
         """Return whether the provided signature is valid for the given data.
 
@@ -725,13 +725,13 @@ class Transit(VaultApiBase):
             'signature_algorithm': signature_algorithm,
         }
         api_path = '/v1/{mount_point}/verify/{name}'.format(mount_point=mount_point, name=name)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
-    def backup_key(self, name, mount_point=DEFAULT_MOUNT_POINT):
+    async def backup_key(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Return a plaintext backup of a named key.
 
         The backup contains all the configuration data and keys of all the versions along with the HMAC key. The
@@ -751,10 +751,10 @@ class Transit(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def restore_key(self, backup, name=None, force=False, mount_point=DEFAULT_MOUNT_POINT):
         """Restore the backup as a named key.

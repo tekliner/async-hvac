@@ -1,13 +1,13 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 from unittest import skipIf
 
-import requests_mock
 from parameterized import parameterized
 
 from async_hvac.adapters import Request
 from async_hvac.api.secrets_engines.azure import Azure, DEFAULT_MOUNT_POINT
 from tests import utils
+from tests.utils import requests_mock
 
 
 @skipIf(utils.vault_version_lt('0.11.0'), "Azure secret engine not available before Vault version 0.11.0")
@@ -16,7 +16,7 @@ class TestAzure(TestCase):
         ('create role', None),
     ])
     @requests_mock.Mocker()
-    def test_create_or_update_role(self, test_label, azure_roles, requests_mocker):
+    async def test_create_or_update_role(self, test_label, azure_roles, requests_mocker):
         expected_status_code = 204
         role_name = 'hvac'
         if azure_roles is None:
@@ -38,7 +38,7 @@ class TestAzure(TestCase):
             # json=mock_response,
         )
         azure = Azure(adapter=Request())
-        create_or_update_role_response = azure.create_or_update_role(
+        create_or_update_role_response = await azure.create_or_update_role(
             name=role_name,
             azure_roles=azure_roles,
             mount_point=DEFAULT_MOUNT_POINT
@@ -47,14 +47,14 @@ class TestAzure(TestCase):
 
         self.assertEqual(
             first=expected_status_code,
-            second=create_or_update_role_response.status_code,
+            second=create_or_update_role_response.status,
         )
 
     @parameterized.expand([
         ('some_test',),
     ])
     @requests_mock.Mocker()
-    def test_list_roles(self, test_label, requests_mocker):
+    async def test_list_roles(self, test_label, requests_mocker):
         expected_status_code = 200
         role_names = ['hvac']
         mock_response = {
@@ -73,7 +73,7 @@ class TestAzure(TestCase):
             json=mock_response,
         )
         azure = Azure(adapter=Request())
-        list_roles_response = azure.list_roles(
+        list_roles_response = await azure.list_roles(
             mount_point=DEFAULT_MOUNT_POINT
         )
         logging.debug('list_roles_response: %s' % list_roles_response)
@@ -87,7 +87,7 @@ class TestAzure(TestCase):
         ('some_test',),
     ])
     @requests_mock.Mocker()
-    def test_generate_credentials(self, test_label, requests_mocker):
+    async def test_generate_credentials(self, test_label, requests_mocker):
         expected_status_code = 200
         role_name = 'hvac'
         mock_response = {
@@ -108,7 +108,7 @@ class TestAzure(TestCase):
             json=mock_response,
         )
         azure = Azure(adapter=Request())
-        generate_credentials_response = azure.generate_credentials(
+        generate_credentials_response = await azure.generate_credentials(
             name=role_name,
             mount_point=DEFAULT_MOUNT_POINT
         )

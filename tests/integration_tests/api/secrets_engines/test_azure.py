@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 from unittest import skipIf
 
 from parameterized import parameterized
@@ -15,23 +15,24 @@ class TestAzure(HvacIntegrationTestCase, TestCase):
     SUBSCRIPTION_ID = '00000000-0000-0000-0000-000000000000'
     DEFAULT_MOUNT_POINT = 'azure-integration-test'
 
-    def setUp(self):
-        super(TestAzure, self).setUp()
-        self.client.enable_secret_backend(
+    async def setUp(self):
+        await super(TestAzure, self).setUp()
+        await self.client.enable_secret_backend(
             backend_type='azure',
             mount_point=self.DEFAULT_MOUNT_POINT,
         )
 
-    def tearDown(self):
-        self.client.disable_secret_backend(mount_point=self.DEFAULT_MOUNT_POINT)
-        super(TestAzure, self).tearDown()
+    async def tearDown(self):
+        await self.client.disable_secret_backend(mount_point=self.DEFAULT_MOUNT_POINT)
+        await super(TestAzure, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         ('no parameters',),
         ('valid environment argument', 'AzureUSGovernmentCloud'),
         ('invalid environment argument', 'AzureCityKity', exceptions.ParamValidationError, 'invalid environment argument provided'),
     ])
-    def test_configure_and_read_configuration(self, test_label, environment=None, raises=False, exception_message=''):
+    async def test_configure_and_read_configuration(self, test_label, environment=None, raises=False, exception_message=''):
         configure_arguments = {
             'subscription_id': self.SUBSCRIPTION_ID,
             'tenant_id': self.TENANT_ID,
@@ -41,15 +42,15 @@ class TestAzure(HvacIntegrationTestCase, TestCase):
             configure_arguments['environment'] = environment
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.azure.configure(**configure_arguments)
+                await self.client.secrets.azure.configure(**configure_arguments)
             self.assertIn(
                 member=exception_message,
                 container=str(cm.exception),
             )
         else:
-            configure_response = self.client.secrets.azure.configure(**configure_arguments)
+            configure_response = await self.client.secrets.azure.configure(**configure_arguments)
             logging.debug('configure_response: %s' % configure_response)
-            read_configuration_response = self.client.secrets.azure.read_config(
+            read_configuration_response = await self.client.secrets.azure.read_config(
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('read_configuration_response: %s' % read_configuration_response)
@@ -71,17 +72,17 @@ class TestAzure(HvacIntegrationTestCase, TestCase):
     @parameterized.expand([
         ('create and then delete config',),
     ])
-    def test_delete_config(self, test_label):
-        configure_response = self.client.secrets.azure.configure(
+    async def test_delete_config(self, test_label):
+        configure_response = await self.client.secrets.azure.configure(
             subscription_id=self.SUBSCRIPTION_ID,
             tenant_id=self.TENANT_ID,
             mount_point=self.DEFAULT_MOUNT_POINT
         )
         logging.debug('configure_response: %s' % configure_response)
-        self.client.secrets.azure.delete_config(
+        await self.client.secrets.azure.delete_config(
             mount_point=self.DEFAULT_MOUNT_POINT,
         )
-        read_configuration_response = self.client.secrets.azure.read_config(
+        read_configuration_response = await self.client.secrets.azure.read_config(
             mount_point=self.DEFAULT_MOUNT_POINT,
         )
         logging.debug('read_configuration_response: %s' % read_configuration_response)

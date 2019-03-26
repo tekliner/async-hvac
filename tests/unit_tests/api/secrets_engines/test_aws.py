@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
-import requests_mock
 from parameterized import parameterized, param
 
 from async_hvac.adapters import Request
 from async_hvac.api.secrets_engines import Aws
 from async_hvac.api.secrets_engines.aws import DEFAULT_MOUNT_POINT
 from async_hvac.exceptions import ParamValidationError
+from tests.utils import requests_mock
 
 
 class TestAws(TestCase):
@@ -18,7 +18,7 @@ class TestAws(TestCase):
             'success',
         ),
     ])
-    def test_rotate_root_iam_credentials(self, test_label, mount_point=DEFAULT_MOUNT_POINT):
+    async def test_rotate_root_iam_credentials(self, test_label, mount_point=DEFAULT_MOUNT_POINT):
         expected_status_code = 200
         mock_response = {
           "data": {
@@ -37,7 +37,7 @@ class TestAws(TestCase):
                 status_code=expected_status_code,
                 json=mock_response,
             )
-            rotate_root_response = aws.rotate_root_iam_credentials(
+            rotate_root_response = await aws.rotate_root_iam_credentials(
                 mount_point=mount_point,
             )
         logging.debug('rotate_root_response: %s' % rotate_root_response)
@@ -57,7 +57,7 @@ class TestAws(TestCase):
             exception_msg='cats'
         ),
     ])
-    def test_generate_credentials(self, test_label, role_name='hvac-test-role', mount_point=DEFAULT_MOUNT_POINT,
+    async def test_generate_credentials(self, test_label, role_name='hvac-test-role', mount_point=DEFAULT_MOUNT_POINT,
                                   endpoint='creds', raises=None, exception_msg=''):
         expected_status_code = 200
         mock_response = {
@@ -83,7 +83,7 @@ class TestAws(TestCase):
 
             if raises:
                 with self.assertRaises(raises) as cm:
-                    aws.generate_credentials(
+                    await aws.generate_credentials(
                         name=role_name,
                         endpoint=endpoint,
                         mount_point=mount_point,
@@ -93,7 +93,7 @@ class TestAws(TestCase):
                     container=str(cm.exception),
                 )
             else:
-                gen_creds_response = aws.generate_credentials(
+                gen_creds_response = await aws.generate_credentials(
                     name=role_name,
                     endpoint=endpoint,
                     mount_point=mount_point,

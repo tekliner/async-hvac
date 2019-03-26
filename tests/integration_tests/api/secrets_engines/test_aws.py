@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized, param
 
@@ -25,31 +25,32 @@ class TestAws(HvacIntegrationTestCase, TestCase):
         'Version': '2012-10-17'
     }
 
-    def setUp(self):
-        super(TestAws, self).setUp()
-        if '%s/' % self.TEST_MOUNT_POINT not in self.client.list_auth_backends():
-            self.client.sys.enable_secrets_engine(
+    async def setUp(self):
+        await super(TestAws, self).setUp()
+        if '%s/' % self.TEST_MOUNT_POINT not in (await self.client.list_auth_backends()):
+            await self.client.sys.enable_secrets_engine(
                 backend_type='aws',
                 path=self.TEST_MOUNT_POINT,
             )
 
-    def tearDown(self):
-        self.client.sys.disable_secrets_engine(
+    async def tearDown(self):
+        await self.client.sys.disable_secrets_engine(
             path=self.TEST_MOUNT_POINT,
         )
-        super(TestAws, self).tearDown()
+        await super(TestAws, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         param(
             'success',
         ),
     ])
-    def test_configure_root_iam_credentials(self, label, credentials='', raises=None, exception_message=''):
+    async def test_configure_root_iam_credentials(self, label, credentials='', raises=None, exception_message=''):
         access_key = 'butts'
         secret_key = 'secret-butts'
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.configure_root_iam_credentials(
+                await self.client.secrets.aws.configure_root_iam_credentials(
                     access_key=access_key,
                     secret_key=secret_key,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -59,7 +60,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            configure_response = self.client.secrets.aws.configure_root_iam_credentials(
+            configure_response = await self.client.secrets.aws.configure_root_iam_credentials(
                 access_key=access_key,
                 secret_key=secret_key,
                 iam_endpoint='localhost',
@@ -68,7 +69,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             )
             logging.debug('configure_response: %s' % configure_response)
             self.assertEqual(
-                first=configure_response.status_code,
+                first=configure_response.status,
                 second=204,
             )
 
@@ -77,10 +78,10 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_configure_lease(self, label, lease='60s', lease_max='120s', raises=None, exception_message=''):
+    async def test_configure_lease(self, label, lease='60s', lease_max='120s', raises=None, exception_message=''):
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.configure_lease(
+                await self.client.secrets.aws.configure_lease(
                     lease=lease,
                     lease_max=lease_max,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -90,14 +91,14 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            configure_response = self.client.secrets.aws.configure_lease(
+            configure_response = await self.client.secrets.aws.configure_lease(
                 lease=lease,
                 lease_max=lease_max,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('configure_response: %s' % configure_response)
             self.assertEqual(
-                first=configure_response.status_code,
+                first=configure_response.status,
                 second=204,
             )
 
@@ -106,9 +107,9 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_read_lease(self, label, lease='60s', lease_max='120s', configure_first=True, raises=None, exception_message=''):
+    async def test_read_lease(self, label, lease='60s', lease_max='120s', configure_first=True, raises=None, exception_message=''):
         if configure_first:
-            configure_response = self.client.secrets.aws.configure_lease(
+            configure_response = await self.client.secrets.aws.configure_lease(
                 lease=lease,
                 lease_max=lease_max,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -117,7 +118,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
 
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.read_lease_config(
+                await self.client.secrets.aws.read_lease_config(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -125,7 +126,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_response = self.client.secrets.aws.read_lease_config(
+            read_response = await self.client.secrets.aws.read_lease_config(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('read_response: %s' % read_response)
@@ -175,12 +176,12 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             exception_message='invalid credential_type argument provided',
         ),
     ])
-    def test_create_or_update_role(self, label, credential_type='iam_user', policy_document=None, default_sts_ttl=None,
+    async def test_create_or_update_role(self, label, credential_type='iam_user', policy_document=None, default_sts_ttl=None,
                                    max_sts_ttl=None, role_arns=None, policy_arns=None, raises=None,
                                    exception_message=''):
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.create_or_update_role(
+                await self.client.secrets.aws.create_or_update_role(
                     name=self.TEST_ROLE_NAME,
                     credential_type=credential_type,
                     policy_document=policy_document,
@@ -196,7 +197,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            role_response = self.client.secrets.aws.create_or_update_role(
+            role_response = await self.client.secrets.aws.create_or_update_role(
                 name=self.TEST_ROLE_NAME,
                 credential_type=credential_type,
                 policy_document=policy_document,
@@ -215,7 +216,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 expected_status_code = 200
 
             self.assertEqual(
-                first=role_response.status_code,
+                first=role_response.status,
                 second=expected_status_code,
             )
 
@@ -224,9 +225,9 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_read_role(self, label, configure_first=True, raises=None, exception_message=''):
+    async def test_read_role(self, label, configure_first=True, raises=None, exception_message=''):
         if configure_first:
-            self.client.secrets.aws.create_or_update_role(
+            await self.client.secrets.aws.create_or_update_role(
                 name=self.TEST_ROLE_NAME,
                 credential_type='iam_user',
                 policy_document=self.TEST_POLICY_DOCUMENT,
@@ -235,7 +236,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.read_role(
+                await self.client.secrets.aws.read_role(
                     name=self.TEST_ROLE_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -244,7 +245,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_role_response = self.client.secrets.aws.read_role(
+            read_role_response = await self.client.secrets.aws.read_role(
                 name=self.TEST_ROLE_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -265,9 +266,9 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_list_roles(self, label, configure_first=True, raises=None, exception_message=''):
+    async def test_list_roles(self, label, configure_first=True, raises=None, exception_message=''):
         if configure_first:
-            self.client.secrets.aws.create_or_update_role(
+            await self.client.secrets.aws.create_or_update_role(
                 name=self.TEST_ROLE_NAME,
                 credential_type='iam_user',
                 policy_document=self.TEST_POLICY_DOCUMENT,
@@ -276,7 +277,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.list_roles(
+                await self.client.secrets.aws.list_roles(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -284,7 +285,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_roles_response = self.client.secrets.aws.list_roles(
+            list_roles_response = await self.client.secrets.aws.list_roles(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('list_roles_response: %s' % list_roles_response)
@@ -298,9 +299,9 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_delete_role(self, label, configure_first=True, raises=None, exception_message=''):
+    async def test_delete_role(self, label, configure_first=True, raises=None, exception_message=''):
         if configure_first:
-            self.client.secrets.aws.create_or_update_role(
+            await self.client.secrets.aws.create_or_update_role(
                 name=self.TEST_ROLE_NAME,
                 credential_type='iam_user',
                 policy_document=self.TEST_POLICY_DOCUMENT,
@@ -309,7 +310,7 @@ class TestAws(HvacIntegrationTestCase, TestCase):
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.aws.delete_role(
+                await self.client.secrets.aws.delete_role(
                     name=self.TEST_ROLE_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -318,12 +319,12 @@ class TestAws(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_role_response = self.client.secrets.aws.delete_role(
+            delete_role_response = await self.client.secrets.aws.delete_role(
                 name=self.TEST_ROLE_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_role_response: %s' % delete_role_response)
             self.assertEqual(
-                first=delete_role_response.status_code,
+                first=delete_role_response.status,
                 second=204,
             )

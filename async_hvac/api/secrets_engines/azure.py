@@ -61,7 +61,7 @@ class Azure(VaultApiBase):
             json=params,
         )
 
-    def read_config(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_config(self, mount_point=DEFAULT_MOUNT_POINT):
         """Read the stored configuration, omitting client_secret.
 
         Supported methods:
@@ -74,10 +74,10 @@ class Azure(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/config'.format(mount_point=mount_point)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json().get('data')
+        return (await response.json()).get('data')
 
     def delete_config(self, mount_point=DEFAULT_MOUNT_POINT):
         """Delete the stored Azure configuration and credentials.
@@ -135,7 +135,7 @@ class Azure(VaultApiBase):
             json=params,
         )
 
-    def list_roles(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def list_roles(self, mount_point=DEFAULT_MOUNT_POINT):
         """List all of the roles that are registered with the plugin.
 
         Supported methods:
@@ -148,12 +148,12 @@ class Azure(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/roles'.format(mount_point=mount_point)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path,
         )
-        return response.json().get('data')
+        return (await response.json()).get('data')
 
-    def generate_credentials(self, name, mount_point=DEFAULT_MOUNT_POINT):
+    async def generate_credentials(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Generate a new service principal based on the named role.
 
         Supported methods:
@@ -171,7 +171,7 @@ class Azure(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json().get('data')
+        return (await response.json()).get('data')

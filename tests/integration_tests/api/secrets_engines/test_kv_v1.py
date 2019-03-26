@@ -1,4 +1,4 @@
-from unittest import TestCase
+from asynctest import TestCase
 
 from parameterized import parameterized
 
@@ -8,22 +8,25 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 
 class TestKvV1(HvacIntegrationTestCase, TestCase):
 
+    async def tearDown(self):
+        await self.client.close()
+
     @parameterized.expand([
         ('nonexistent secret', 'no-secret-here', False, exceptions.InvalidPath),
         ('read secret', 'top-secret'),
     ])
-    def test_read_secret(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_read_secret(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
         if write_secret_before_test:
-            self.client.secrets.kv.v1.create_or_update_secret(
+            await self.client.secrets.kv.v1.create_or_update_secret(
                 path=path,
                 secret=test_secret,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v1.read_secret(
+                await self.client.secrets.kv.v1.read_secret(
                     path=path,
                 )
             self.assertIn(
@@ -32,7 +35,7 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
             )
         else:
 
-            read_secret_result = self.client.secrets.kv.v1.read_secret(
+            read_secret_result = await self.client.secrets.kv.v1.read_secret(
                 path=path,
             )
             self.assertDictEqual(
@@ -44,20 +47,20 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
         ('nonexistent secret', 'hvac/no-secret-here', False, exceptions.InvalidPath),
         ('list secret', 'hvac/top-secret'),
     ])
-    def test_list_secrets(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_list_secrets(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
         test_path_prefix, test_key = path.split('/')[:2]
 
         if write_secret_before_test:
-            self.client.secrets.kv.v1.create_or_update_secret(
+            await self.client.secrets.kv.v1.create_or_update_secret(
                 path=path,
                 secret=test_secret,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v1.list_secrets(
+                await self.client.secrets.kv.v1.list_secrets(
                     path=test_path_prefix,
                 )
             self.assertIn(
@@ -65,7 +68,7 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_secrets_result = self.client.secrets.kv.v1.list_secrets(
+            list_secrets_result = await self.client.secrets.kv.v1.list_secrets(
                 path=test_path_prefix,
             )
             self.assertEqual(
@@ -81,19 +84,19 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
         ('update secret put method specified', 'hvac', 'PUT'),
         ('update secret invalid method specified', 'hvac', 'GET', True, exceptions.ParamValidationError, '"method" parameter provided invalid value'),
     ])
-    def test_create_or_update_secret(self, test_label, path, method=None, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_create_or_update_secret(self, test_label, path, method=None, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
 
         if write_secret_before_test:
-            self.client.secrets.kv.v1.create_or_update_secret(
+            await self.client.secrets.kv.v1.create_or_update_secret(
                 path=path,
                 secret=test_secret,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v1.create_or_update_secret(
+                await self.client.secrets.kv.v1.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     method=method,
@@ -103,33 +106,33 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_secret_result = self.client.secrets.kv.v1.create_or_update_secret(
+            create_or_update_secret_result = await self.client.secrets.kv.v1.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 method=method,
             )
             self.assertEqual(
                 first=204,
-                second=create_or_update_secret_result.status_code,
+                second=create_or_update_secret_result.status,
             )
 
     @parameterized.expand([
         ('nonexistent secret', 'hvac/no-secret-here'),
         ('delete secret', 'hvac/top-secret'),
     ])
-    def test_delete_secret(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_delete_secret(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
 
         if write_secret_before_test:
-            self.client.secrets.kv.v1.create_or_update_secret(
+            await self.client.secrets.kv.v1.create_or_update_secret(
                 path=path,
                 secret=test_secret,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v1.delete_secret(
+                await self.client.secrets.kv.v1.delete_secret(
                     path=path,
                 )
             self.assertIn(
@@ -142,5 +145,5 @@ class TestKvV1(HvacIntegrationTestCase, TestCase):
             )
             self.assertEqual(
                 first=204,
-                second=delete_secret_result.status_code,
+                second=delete_secret_result.status,
             )

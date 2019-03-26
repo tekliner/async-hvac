@@ -1,6 +1,6 @@
 import logging
 from time import sleep
-from unittest import TestCase, skipIf
+from asynctest import TestCase, skipIf
 
 from parameterized import parameterized, param
 
@@ -13,9 +13,9 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 class TestKvV2(HvacIntegrationTestCase, TestCase):
     DEFAULT_MOUNT_POINT = 'kvv2'
 
-    def setUp(self):
-        super(TestKvV2, self).setUp()
-        self.client.enable_secret_backend(
+    async def setUp(self):
+        await super(TestKvV2, self).setUp()
+        await self.client.enable_secret_backend(
             backend_type='kv',
             mount_point=self.DEFAULT_MOUNT_POINT,
             options=dict(version=2),
@@ -25,16 +25,17 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         # So we wait for it to show up in the mounted secrets engines list here before proceeding.
         path = '{mount_point}/'.format(mount_point=self.DEFAULT_MOUNT_POINT)
         attempts = 0
-        while attempts < 25 and path not in self.client.sys.list_mounted_secrets_engines()['data']:
+        while attempts < 25 and path not in (await self.client.sys.list_mounted_secrets_engines()['data']):
             attempts += 1
             logging.debug('Waiting 1 second for KV V2 secrets engine under path {path} to become available...'.format(
                 path=self.DEFAULT_MOUNT_POINT,
             ))
             sleep(1)
 
-    def tearDown(self):
-        self.client.disable_secret_backend(mount_point=self.DEFAULT_MOUNT_POINT)
-        super(TestKvV2, self).tearDown()
+    async def tearDown(self):
+        await self.client.disable_secret_backend(mount_point=self.DEFAULT_MOUNT_POINT)
+        await super(TestKvV2, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         ('no parameters',),
@@ -42,14 +43,14 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('set cas required', 10, True),
         ('set max versions and cas required', 17, True),
     ])
-    def test_configure_and_read_configuration(self, test_label, max_versions=10, cas_required=None):
+    async def test_configure_and_read_configuration(self, test_label, max_versions=10, cas_required=None):
         configure_arguments = dict(mount_point=self.DEFAULT_MOUNT_POINT)
         if max_versions is not None:
             configure_arguments['max_versions'] = max_versions
         if cas_required is not None:
             configure_arguments['cas_required'] = cas_required
-        self.client.secrets.kv.v2.configure(**configure_arguments)
-        read_configuration_response = self.client.secrets.kv.v2.read_configuration(
+        await self.client.secrets.kv.v2.configure(**configure_arguments)
+        read_configuration_response = await self.client.secrets.kv.v2.read_configuration(
             mount_point=self.DEFAULT_MOUNT_POINT,
         )
         logging.debug('read_configuration_response: %s' % read_configuration_response)
@@ -69,26 +70,26 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('read current secret version', 'top-secret', None, 10),
         ('read current secret version', 'top-secret', None, 15),
     ])
-    def test_read_secret_version(self, test_label, path, version=None, write_secret_before_test=True, raises=None):
+    async def test_read_secret_version(self, test_label, path, version=None, write_secret_before_test=True, raises=None):
         if write_secret_before_test:
             for num in range(1, write_secret_before_test + 1):
                 test_secret = {
                     'pssst': num,
                 }
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
         if raises:
             with self.assertRaises(raises):
-                self.client.secrets.kv.v2.read_secret_version(
+                await self.client.secrets.kv.v2.read_secret_version(
                     path=path,
                     version=version,
                     mount_point=self.DEFAULT_MOUNT_POINT,
                 )
         else:
-            read_secret_result = self.client.secrets.kv.v2.read_secret_version(
+            read_secret_result = await self.client.secrets.kv.v2.read_secret_version(
                 path=path,
                 version=version,
                 mount_point=self.DEFAULT_MOUNT_POINT,
@@ -108,20 +109,20 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('update secret with invalid cas', 'hvac', -1, True, exceptions.InvalidRequest, 'did not match the current version'),
         ('update with cas of 0 after path already written', 'hvac', 0, True, exceptions.InvalidRequest, 'did not match the current version'),
     ])
-    def test_create_or_update_secret(self, test_label, path, cas=None, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_create_or_update_secret(self, test_label, path, cas=None, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
 
         if write_secret_before_test:
-            self.client.secrets.kv.v2.create_or_update_secret(
+            await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     cas=cas,
@@ -132,7 +133,7 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_secret_result = self.client.secrets.kv.v2.create_or_update_secret(
+            create_or_update_secret_result = await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 cas=cas,
@@ -162,21 +163,21 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
             update_dict=dict(pssst='some secret')
         ),
     ])
-    def test_patch(self, label, update_dict, mount_point=DEFAULT_MOUNT_POINT, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_patch(self, label, update_dict, mount_point=DEFAULT_MOUNT_POINT, write_secret_before_test=True, raises=None, exception_message=''):
         path = 'hvac_kv_v2_test_patch'
         test_secret = {
             'pssst': 'hi',
         }
 
         if write_secret_before_test:
-            self.client.secrets.kv.v2.create_or_update_secret(
+            await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 mount_point=mount_point,
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.patch(
+                await self.client.secrets.kv.v2.patch(
                     path=path,
                     secret=update_dict,
                     mount_point=mount_point,
@@ -186,7 +187,7 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            patch_result = self.client.secrets.kv.v2.patch(
+            patch_result = await self.client.secrets.kv.v2.patch(
                 path=path,
                 secret=update_dict,
                 mount_point=mount_point,
@@ -198,7 +199,7 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 second=patch_result['data']['version'],
             )
 
-            read_secret_result = self.client.secrets.kv.v2.read_secret_version(
+            read_secret_result = await self.client.secrets.kv.v2.read_secret_version(
                 path=path,
                 mount_point=mount_point,
             )
@@ -215,24 +216,24 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('successful delete three versions written', 'hvac', 3),
         ('nonexistent path', 'no-secret-here', 0, exceptions.InvalidPath),
     ])
-    def test_delete_latest_version_of_secret(self, test_label, path, write_secret_before_test=1, raises=None, exception_message=''):
+    async def test_delete_latest_version_of_secret(self, test_label, path, write_secret_before_test=1, raises=None, exception_message=''):
         if write_secret_before_test:
             for num in range(1, write_secret_before_test + 1):
                 test_secret = {
                     'pssst': num,
                 }
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
         if raises:
-            self.client.secrets.kv.v2.delete_latest_version_of_secret(
+            await self.client.secrets.kv.v2.delete_latest_version_of_secret(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.read_secret_metadata(
+                await self.client.secrets.kv.v2.read_secret_metadata(
                     path=path,
                     mount_point=self.DEFAULT_MOUNT_POINT,
                 )
@@ -241,12 +242,12 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_latest_version_of_secret_result = self.client.secrets.kv.v2.delete_latest_version_of_secret(
+            delete_latest_version_of_secret_result = await self.client.secrets.kv.v2.delete_latest_version_of_secret(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('delete_latest_version_of_secret_result: %s' % delete_latest_version_of_secret_result)
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
@@ -275,21 +276,21 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('nonexistent version 2', 'no-versions-here', 3, [7, 9]),
         ('nonexistent version 3', 'no-versions-here', 3, [7, 12]),
     ])
-    def test_delete_secret_versions(self, test_label, path, write_secret_before_test=1, deleted_versions=None, raises=None, exception_message=''):
+    async def test_delete_secret_versions(self, test_label, path, write_secret_before_test=1, deleted_versions=None, raises=None, exception_message=''):
 
         if write_secret_before_test:
             for num in range(1, write_secret_before_test + 1):
                 test_secret = {
                     'pssst': num,
                 }
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.delete_secret_versions(
+                await self.client.secrets.kv.v2.delete_secret_versions(
                     path=path,
                     versions=deleted_versions,
                     mount_point=self.DEFAULT_MOUNT_POINT,
@@ -299,13 +300,13 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_secret_versions_result = self.client.secrets.kv.v2.delete_secret_versions(
+            delete_secret_versions_result = await self.client.secrets.kv.v2.delete_secret_versions(
                 path=path,
                 versions=deleted_versions,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('delete_secret_versions_result: %s' % delete_secret_versions_result)
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
@@ -346,25 +347,25 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('nonexistent version 2', 'no-versions-here', 3, [7, 9]),
         ('nonexistent version 3', 'no-versions-here', 3, [7, 12]),
     ])
-    def test_undelete_secret_versions(self, test_label, path, write_secret_before_test=1, undeleted_versions=None, raises=None, exception_message=''):
+    async def test_undelete_secret_versions(self, test_label, path, write_secret_before_test=1, undeleted_versions=None, raises=None, exception_message=''):
 
         if write_secret_before_test:
             for num in range(1, write_secret_before_test + 1):
                 test_secret = {
                     'pssst': num,
                 }
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
-                self.client.secrets.kv.v2.delete_latest_version_of_secret(
+                await self.client.secrets.kv.v2.delete_latest_version_of_secret(
                     path=path,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.undelete_secret_versions(
+                await self.client.secrets.kv.v2.undelete_secret_versions(
                     path=path,
                     versions=undeleted_versions,
                     mount_point=self.DEFAULT_MOUNT_POINT,
@@ -374,13 +375,13 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_secret_versions_result = self.client.secrets.kv.v2.undelete_secret_versions(
+            delete_secret_versions_result = await self.client.secrets.kv.v2.undelete_secret_versions(
                 path=path,
                 versions=undeleted_versions,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('delete_secret_versions_result: %s' % delete_secret_versions_result)
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
@@ -420,7 +421,7 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('nonexistent version 2', 'no-versions-here', 3, [7, 9]),
         ('nonexistent version 3', 'no-versions-here', 3, [7, 12]),
     ])
-    def test_destroy_secret_versions(self, test_label, path, write_secret_before_test=1, destoryed_versions=None, raises=None, exception_message=''):
+    async def test_destroy_secret_versions(self, test_label, path, write_secret_before_test=1, destoryed_versions=None, raises=None, exception_message=''):
 
         if write_secret_before_test:
             logging.error(write_secret_before_test)
@@ -428,14 +429,14 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 test_secret = {
                     'pssst': num,
                 }
-                self.client.secrets.kv.v2.create_or_update_secret(
+                await self.client.secrets.kv.v2.create_or_update_secret(
                     path=path,
                     secret=test_secret,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.destroy_secret_versions(
+                await self.client.secrets.kv.v2.destroy_secret_versions(
                     path=path,
                     versions=destoryed_versions,
                     mount_point=self.DEFAULT_MOUNT_POINT,
@@ -445,13 +446,13 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            destroy_secret_versions_result = self.client.secrets.kv.v2.destroy_secret_versions(
+            destroy_secret_versions_result = await self.client.secrets.kv.v2.destroy_secret_versions(
                 path=path,
                 versions=destoryed_versions,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('destroy_secret_versions_result: %s' % destroy_secret_versions_result)
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
@@ -478,21 +479,21 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('nonexistent secret', 'hvac/no-secret-here', False, exceptions.InvalidPath),
         ('list secret', 'hvac/top-secret'),
     ])
-    def test_list_secrets(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_list_secrets(self, test_label, path, write_secret_before_test=True, raises=None, exception_message=''):
         test_secret = {
             'pssst': 'hi',
         }
         test_path_prefix, test_key = path.split('/')[:2]
 
         if write_secret_before_test:
-            self.client.secrets.kv.v2.create_or_update_secret(
+            await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 mount_point=self.DEFAULT_MOUNT_POINT
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.list_secrets(
+                await self.client.secrets.kv.v2.list_secrets(
                     path=test_path_prefix,
                     mount_point=self.DEFAULT_MOUNT_POINT
                 )
@@ -501,7 +502,7 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_secrets_result = self.client.secrets.kv.v2.list_secrets(
+            list_secrets_result = await self.client.secrets.kv.v2.list_secrets(
                 path=test_path_prefix,
                 mount_point=self.DEFAULT_MOUNT_POINT
             )
@@ -520,19 +521,19 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('update cas_required false', 'hvac', None, False),
         ('update with invalid cas_required param', 'hvac', None, 'cats', True, exceptions.ParamValidationError, 'bool expected for cas_required param'),
     ])
-    def test_update_metadata(self, test_label, path, max_versions=None, cas_required=None, write_secret_before_test=True, raises=None, exception_message=''):
+    async def test_update_metadata(self, test_label, path, max_versions=None, cas_required=None, write_secret_before_test=True, raises=None, exception_message=''):
         if write_secret_before_test:
             test_secret = {
                 'pssst': 'hi itsame hvac',
             }
-            self.client.secrets.kv.v2.create_or_update_secret(
+            await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 mount_point=self.DEFAULT_MOUNT_POINT
             )
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.kv.v2.update_metadata(
+                await self.client.secrets.kv.v2.update_metadata(
                     path=path,
                     max_versions=max_versions,
                     cas_required=cas_required,
@@ -543,14 +544,14 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            update_metadata_result = self.client.secrets.kv.v2.update_metadata(
+            update_metadata_result = await self.client.secrets.kv.v2.update_metadata(
                 path=path,
                 max_versions=max_versions,
                 cas_required=cas_required,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
             logging.debug('update_metadata_result: %s' % update_metadata_result)
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )
@@ -566,24 +567,24 @@ class TestKvV2(HvacIntegrationTestCase, TestCase):
         ('nonexistent secret', 'hvac/no-secret-here', False),
         ('delete extant secret metadata', 'hvac/top-secret'),
     ])
-    def test_delete_metadata_and_all_versions(self, test_label, path, write_secret_before_test=True):
+    async def test_delete_metadata_and_all_versions(self, test_label, path, write_secret_before_test=True):
         test_secret = {
             'pssst': 'hi',
         }
 
         if write_secret_before_test:
-            self.client.secrets.kv.v2.create_or_update_secret(
+            await self.client.secrets.kv.v2.create_or_update_secret(
                 path=path,
                 secret=test_secret,
                 mount_point=self.DEFAULT_MOUNT_POINT
             )
-        delete_metadata_and_all_versions_result = self.client.secrets.kv.v2.delete_metadata_and_all_versions(
+        delete_metadata_and_all_versions_result = await self.client.secrets.kv.v2.delete_metadata_and_all_versions(
             path=path,
             mount_point=self.DEFAULT_MOUNT_POINT
         )
         logging.debug('delete_metadata_and_all_versions_result: %s' % delete_metadata_and_all_versions_result)
         with self.assertRaises(exceptions.InvalidPath):
-            read_secret_metadata_result = self.client.secrets.kv.v2.read_secret_metadata(
+            read_secret_metadata_result = await self.client.secrets.kv.v2.read_secret_metadata(
                 path=path,
                 mount_point=self.DEFAULT_MOUNT_POINT,
             )

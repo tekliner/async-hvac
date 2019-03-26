@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 from unittest import skipIf
 
 from parameterized import parameterized, param
@@ -12,27 +12,28 @@ from tests.utils.hvac_integration_test_case import HvacIntegrationTestCase
 class TestTransit(HvacIntegrationTestCase, TestCase):
     TEST_MOUNT_POINT = 'transit-integration-test'
 
-    def setUp(self):
-        super(TestTransit, self).setUp()
-        self.client.enable_secret_backend(
+    async def setUp(self):
+        await super(TestTransit, self).setUp()
+        await self.client.enable_secret_backend(
             backend_type='transit',
             mount_point=self.TEST_MOUNT_POINT,
         )
 
-    def tearDown(self):
-        self.client.disable_secret_backend(mount_point=self.TEST_MOUNT_POINT)
-        super(TestTransit, self).tearDown()
+    async def tearDown(self):
+        await self.client.disable_secret_backend(mount_point=self.TEST_MOUNT_POINT)
+        await super(TestTransit, self).tearDown()
+        await self.client.close()
 
     @parameterized.expand([
         param(
             'success',
         ),
     ])
-    def test_create_key(self, label, raises=False, exception_message=''):
+    async def test_create_key(self, label, raises=False, exception_message=''):
         key_name = 'testkey'
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.create_key(
+                await self.client.secrets.transit.create_key(
                     name=key_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -41,13 +42,13 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_key_response = self.client.secrets.transit.create_key(
+            create_key_response = await self.client.secrets.transit.create_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('create_key_response: %s' % create_key_response)
             self.assertEqual(
-                first=create_key_response.status_code,
+                first=create_key_response.status,
                 second=204,
             )
 
@@ -56,16 +57,16 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_read_key(self, label, raises=False, exception_message=''):
+    async def test_read_key(self, label, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.read_key(
+                await self.client.secrets.transit.read_key(
                     name=key_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -74,7 +75,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_key_response = self.client.secrets.transit.read_key(
+            read_key_response = await self.client.secrets.transit.read_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -89,16 +90,16 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_list_keys(self, label, raises=False, exception_message=''):
+    async def test_list_keys(self, label, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.list_keys(
+                await self.client.secrets.transit.list_keys(
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             self.assertIn(
@@ -106,7 +107,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_keys_response = self.client.secrets.transit.list_keys(
+            list_keys_response = await self.client.secrets.transit.list_keys(
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('list_keys_response: %s' % list_keys_response)
@@ -120,14 +121,14 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_delete_key(self, label, raises=False, exception_message=''):
+    async def test_delete_key(self, label, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        update_key_configuration_response = self.client.secrets.transit.update_key_configuration(
+        update_key_configuration_response = await self.client.secrets.transit.update_key_configuration(
             name=key_name,
             deletion_allowed=True,
             mount_point=self.TEST_MOUNT_POINT,
@@ -135,7 +136,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         logging.debug('update_key_configuration_response: %s' % update_key_configuration_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.delete_key(
+                await self.client.secrets.transit.delete_key(
                     name=key_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -144,13 +145,13 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_key_response = self.client.secrets.transit.delete_key(
+            delete_key_response = await self.client.secrets.transit.delete_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('delete_key_response: %s' % delete_key_response)
             self.assertEqual(
-                first=delete_key_response.status_code,
+                first=delete_key_response.status,
                 second=204,
             )
 
@@ -159,16 +160,16 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_rotate_key(self, label, raises=False, exception_message=''):
+    async def test_rotate_key(self, label, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.rotate_key(
+                await self.client.secrets.transit.rotate_key(
                     name=key_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -177,13 +178,13 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            rotate_key_response = self.client.secrets.transit.rotate_key(
+            rotate_key_response = await self.client.secrets.transit.rotate_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('rotate_key_response: %s' % rotate_key_response)
             self.assertEqual(
-                first=rotate_key_response.status_code,
+                first=rotate_key_response.status,
                 second=204,
             )
 
@@ -198,9 +199,9 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid key_type argument provided',
         ),
     ])
-    def test_export_key(self, label, key_type='hmac-key', raises=False, exception_message=''):
+    async def test_export_key(self, label, key_type='hmac-key', raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             exportable=True,
             mount_point=self.TEST_MOUNT_POINT,
@@ -208,7 +209,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.export_key(
+                await self.client.secrets.transit.export_key(
                     name=key_name,
                     key_type=key_type,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -218,7 +219,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            export_key_response = self.client.secrets.transit.export_key(
+            export_key_response = await self.client.secrets.transit.export_key(
                 name=key_name,
                 key_type=key_type,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -238,17 +239,17 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_encrypt_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
+    async def test_encrypt_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
         key_name = 'testkey'
         plaintext = utils.base64ify(plaintext)
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.encrypt_data(
+                await self.client.secrets.transit.encrypt_data(
                     name=key_name,
                     plaintext=plaintext,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -258,7 +259,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            encrypt_data_response = self.client.secrets.transit.encrypt_data(
+            encrypt_data_response = await self.client.secrets.transit.encrypt_data(
                 name=key_name,
                 plaintext=plaintext,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -274,15 +275,15 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_decrypt_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
+    async def test_decrypt_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
         key_name = 'testkey'
         plaintext = utils.base64ify(plaintext)
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        encrypt_data_response = self.client.secrets.transit.encrypt_data(
+        encrypt_data_response = await self.client.secrets.transit.encrypt_data(
             name=key_name,
             plaintext=plaintext,
             mount_point=self.TEST_MOUNT_POINT,
@@ -291,7 +292,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         ciphertext = encrypt_data_response['data']['ciphertext']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.decrypt_data(
+                await self.client.secrets.transit.decrypt_data(
                     name=key_name,
                     ciphertext=ciphertext,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -301,7 +302,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            decrypt_data_response = self.client.secrets.transit.decrypt_data(
+            decrypt_data_response = await self.client.secrets.transit.decrypt_data(
                 name=key_name,
                 ciphertext=ciphertext,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -317,29 +318,29 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_rewrap_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
+    async def test_rewrap_data(self, label, plaintext='hi itsame hvac', raises=False, exception_message=''):
         key_name = 'testkey'
         plaintext = utils.base64ify(plaintext)
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        encrypt_data_response = self.client.secrets.transit.encrypt_data(
+        encrypt_data_response = await self.client.secrets.transit.encrypt_data(
             name=key_name,
             plaintext=plaintext,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('encrypt_data_response: %s' % encrypt_data_response)
         ciphertext = encrypt_data_response['data']['ciphertext']
-        rotate_key_response = self.client.secrets.transit.rotate_key(
+        rotate_key_response = await self.client.secrets.transit.rotate_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('rotate_key_response: %s' % rotate_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.rewrap_data(
+                await self.client.secrets.transit.rewrap_data(
                     name=key_name,
                     ciphertext=ciphertext,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -349,7 +350,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            rewrap_data_response = self.client.secrets.transit.rewrap_data(
+            rewrap_data_response = await self.client.secrets.transit.rewrap_data(
                 name=key_name,
                 ciphertext=ciphertext,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -371,16 +372,16 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid key_type argument provided',
         ),
     ])
-    def test_generate_data_key(self, label, key_type='plaintext', raises=False, exception_message=''):
+    async def test_generate_data_key(self, label, key_type='plaintext', raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.generate_data_key(
+                await self.client.secrets.transit.generate_data_key(
                     name=key_name,
                     key_type=key_type,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -390,7 +391,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            gen_data_key_response = self.client.secrets.transit.generate_data_key(
+            gen_data_key_response = await self.client.secrets.transit.generate_data_key(
                 name=key_name,
                 key_type=key_type,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -406,10 +407,10 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             'success',
         ),
     ])
-    def test_generate_random_bytes(self, label, n_bytes=32, raises=False, exception_message=''):
+    async def test_generate_random_bytes(self, label, n_bytes=32, raises=False, exception_message=''):
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.generate_random_bytes(
+                await self.client.secrets.transit.generate_random_bytes(
                     n_bytes=n_bytes,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -418,7 +419,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            gen_bytes_response = self.client.secrets.transit.generate_random_bytes(
+            gen_bytes_response = await self.client.secrets.transit.generate_random_bytes(
                 n_bytes=n_bytes,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -445,11 +446,11 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid output_format argument provided',
         ),
     ])
-    def test_hash_data(self, label, hash_input='hash this ish', algorithm='sha2-256', output_format='hex', raises=False, exception_message=''):
+    async def test_hash_data(self, label, hash_input='hash this ish', algorithm='sha2-256', output_format='hex', raises=False, exception_message=''):
         hash_input = utils.base64ify(hash_input)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.hash_data(
+                await self.client.secrets.transit.hash_data(
                     hash_input=hash_input,
                     algorithm=algorithm,
                     output_format=output_format,
@@ -460,7 +461,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            hash_data_response = self.client.secrets.transit.hash_data(
+            hash_data_response = await self.client.secrets.transit.hash_data(
                 hash_input=hash_input,
                 algorithm=algorithm,
                 output_format=output_format,
@@ -483,17 +484,17 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid algorithm argument provided',
         ),
     ])
-    def test_generate_hmac(self, label, hash_input='hash this ish', algorithm='sha2-256', raises=False, exception_message=''):
+    async def test_generate_hmac(self, label, hash_input='hash this ish', algorithm='sha2-256', raises=False, exception_message=''):
         hash_input = utils.base64ify(hash_input)
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.generate_hmac(
+                await self.client.secrets.transit.generate_hmac(
                     name=key_name,
                     hash_input=hash_input,
                     algorithm=algorithm,
@@ -504,7 +505,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            generate_hmac_response = self.client.secrets.transit.generate_hmac(
+            generate_hmac_response = await self.client.secrets.transit.generate_hmac(
                 name=key_name,
                 hash_input=hash_input,
                 algorithm=algorithm,
@@ -533,12 +534,12 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid signature_algorithm argument provided',
         ),
     ])
-    def test_sign_data(self, label, hash_input='hash this ish', hash_algorithm='sha2-256', signature_algorithm='pss',
+    async def test_sign_data(self, label, hash_input='hash this ish', hash_algorithm='sha2-256', signature_algorithm='pss',
                        raises=False, exception_message=''):
         hash_input = utils.base64ify(hash_input)
         key_name = 'testkey'
         key_type = 'ed25519'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             key_type=key_type,
             mount_point=self.TEST_MOUNT_POINT,
@@ -546,7 +547,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         logging.debug('create_key_response: %s' % create_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.sign_data(
+                await self.client.secrets.transit.sign_data(
                     name=key_name,
                     hash_input=hash_input,
                     hash_algorithm=hash_algorithm,
@@ -558,7 +559,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            sign_data_response = self.client.secrets.transit.sign_data(
+            sign_data_response = await self.client.secrets.transit.sign_data(
                 name=key_name,
                 hash_input=hash_input,
                 hash_algorithm=hash_algorithm,
@@ -588,18 +589,18 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             exception_message='invalid signature_algorithm argument provided',
         ),
     ])
-    def test_verify_signed_data(self, label, hash_input='hash this ish', hash_algorithm='sha2-256', signature_algorithm='pss',
+    async def test_verify_signed_data(self, label, hash_input='hash this ish', hash_algorithm='sha2-256', signature_algorithm='pss',
                                 raises=False, exception_message=''):
         hash_input = utils.base64ify(hash_input)
         key_name = 'testkey'
         key_type = 'ed25519'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             key_type=key_type,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        sign_data_response = self.client.secrets.transit.sign_data(
+        sign_data_response = await self.client.secrets.transit.sign_data(
             name=key_name,
             hash_input=hash_input,
             hash_algorithm='sha2-256',
@@ -610,7 +611,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         signature = sign_data_response['data']['signature']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.verify_signed_data(
+                await self.client.secrets.transit.verify_signed_data(
                     name=key_name,
                     hash_input=hash_input,
                     signature=signature,
@@ -623,7 +624,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            verify_signed_data_response = self.client.secrets.transit.verify_signed_data(
+            verify_signed_data_response = await self.client.secrets.transit.verify_signed_data(
                 name=key_name,
                 hash_input=hash_input,
                 signature=signature,
@@ -648,14 +649,14 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.9.1'), "transit key export/restore added in Vault versions >=0.9.1")
-    def test_backup_key(self, label, allow_plaintext_backup=True, raises=False, exception_message=''):
+    async def test_backup_key(self, label, allow_plaintext_backup=True, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        update_key_configuration_response = self.client.secrets.transit.update_key_configuration(
+        update_key_configuration_response = await self.client.secrets.transit.update_key_configuration(
             name=key_name,
             exportable=True,
             allow_plaintext_backup=allow_plaintext_backup,
@@ -664,7 +665,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         logging.debug('update_key_configuration_response: %s' % update_key_configuration_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.backup_key(
+                await self.client.secrets.transit.backup_key(
                     name=key_name,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -673,7 +674,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            backup_key_response = self.client.secrets.transit.backup_key(
+            backup_key_response = await self.client.secrets.transit.backup_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -699,21 +700,21 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.9.1'), "transit key export/restore added in Vault versions >=0.9.1")
-    def test_restore_key(self, label, name='new_test_ky', force=False, raises=False, exception_message=''):
+    async def test_restore_key(self, label, name='new_test_ky', force=False, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
-        update_key_configuration_response = self.client.secrets.transit.update_key_configuration(
+        update_key_configuration_response = await self.client.secrets.transit.update_key_configuration(
             name=key_name,
             exportable=True,
             allow_plaintext_backup=True,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('update_key_configuration_response: %s' % update_key_configuration_response)
-        backup_key_response = self.client.secrets.transit.backup_key(
+        backup_key_response = await self.client.secrets.transit.backup_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
@@ -721,7 +722,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         backup = backup_key_response['data']['backup']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.restore_key(
+                await self.client.secrets.transit.restore_key(
                     backup=backup,
                     name=name,
                     force=force,
@@ -732,7 +733,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            restore_key_response = self.client.secrets.transit.restore_key(
+            restore_key_response = await self.client.secrets.transit.restore_key(
                 backup=backup,
                 name=name,
                 force=force,
@@ -740,7 +741,7 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
             )
             logging.debug('restore_key_response: %s' % restore_key_response)
             self.assertEqual(
-                first=restore_key_response.status_code,
+                first=restore_key_response.status,
                 second=204,
             )
 
@@ -750,21 +751,21 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.4'), "transit key trimming added in Vault versions >=0.11.4")
-    def test_trim_key(self, label, min_version=2, raises=False, exception_message=''):
+    async def test_trim_key(self, label, min_version=2, raises=False, exception_message=''):
         key_name = 'testkey'
-        create_key_response = self.client.secrets.transit.create_key(
+        create_key_response = await self.client.secrets.transit.create_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('create_key_response: %s' % create_key_response)
         for _ in range(0, 10):
-            rotate_key_response = self.client.secrets.transit.rotate_key(
+            rotate_key_response = await self.client.secrets.transit.rotate_key(
                 name=key_name,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('rotate_key_response: %s' % rotate_key_response)
 
-        update_key_configuration_response = self.client.secrets.transit.update_key_configuration(
+        update_key_configuration_response = await self.client.secrets.transit.update_key_configuration(
             name=key_name,
             min_decryption_version=3,
             min_encryption_version=9,
@@ -772,14 +773,14 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
         )
         logging.debug('update_key_configuration_response: %s' % update_key_configuration_response)
 
-        read_key_response = self.client.secrets.transit.read_key(
+        read_key_response = await self.client.secrets.transit.read_key(
             name=key_name,
             mount_point=self.TEST_MOUNT_POINT,
         )
         logging.debug('read_key_response: %s' % read_key_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.transit.trim_key(
+                await self.client.secrets.transit.trim_key(
                     name=key_name,
                     min_version=min_version,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -789,13 +790,13 @@ class TestTransit(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            trim_key_response = self.client.secrets.transit.trim_key(
+            trim_key_response = await self.client.secrets.transit.trim_key(
                 name=key_name,
                 min_version=min_version,
                 mount_point=self.TEST_MOUNT_POINT,
             )
             logging.debug('trim_key_response: %s' % trim_key_response)
             self.assertEqual(
-                first=trim_key_response.status_code,
+                first=trim_key_response.status,
                 second=204,
             )

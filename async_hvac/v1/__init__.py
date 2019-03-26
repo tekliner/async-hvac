@@ -284,7 +284,7 @@ class AsyncClient(object):
         :return:
         :rtype:
         """
-        self._adapter.put('/v1/auth/token/revoke-self')
+        return self._adapter.put('/v1/auth/token/revoke-self')
 
     async def create_token(self, role=None, token_id=None, policies=None, meta=None,
                            no_parent=False, lease=None, display_name=None,
@@ -520,7 +520,7 @@ class AsyncClient(object):
         """
         return self.list('auth/token/roles')
 
-    def logout(self, revoke_token=False):
+    async def logout(self, revoke_token=False):
         """Clears the token used for authentication, optionally revoking it before doing so.
 
         :param revoke_token:
@@ -2109,7 +2109,7 @@ class AsyncClient(object):
         new_method=api.SystemBackend.list_policies,
     )
     async def list_policies(self):
-        policies = (await (await self.sys.list_policies()))['data']['policies']
+        policies = (await self.sys.list_policies())['data']['policies']
         return policies
 
     @utils.deprecated_method(

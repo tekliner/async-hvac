@@ -1,5 +1,5 @@
 import logging
-from unittest import TestCase
+from asynctest import TestCase
 from unittest import skipIf
 
 from parameterized import parameterized, param
@@ -21,27 +21,28 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
 
     test_approle_accessor = None
 
-    def setUp(self):
-        super(TestIdentity, self).setUp()
-        self.client.sys.enable_auth_method(
+    async def setUp(self):
+        await super(TestIdentity, self).setUp()
+        await self.client.sys.enable_auth_method(
             method_type='approle',
             path=self.TEST_APPROLE_PATH,
         )
-        list_auth_response = self.client.sys.list_auth_methods()
+        list_auth_response = await self.client.sys.list_auth_methods()
         self.test_approle_accessor = list_auth_response['data']['%s/' % self.TEST_APPROLE_PATH]['accessor']
 
-    def tearDown(self):
-        self.tear_down_entities()
-        self.tear_down_entity_aliases()
-        self.tear_down_groups()
-        self.client.sys.disable_auth_method(
+    async def tearDown(self):
+        await self.tear_down_entities()
+        await self.tear_down_entity_aliases()
+        await self.tear_down_groups()
+        await self.client.sys.disable_auth_method(
             path=self.TEST_APPROLE_PATH,
         )
-        super(TestIdentity, self).tearDown()
+        await super(TestIdentity, self).tearDown()
+        await self.client.close()
 
-    def tear_down_entities(self):
+    async def tear_down_entities(self):
         try:
-            list_entities_response = self.client.secrets.identity.list_entities(mount_point=self.TEST_MOUNT_POINT)
+            list_entities_response = await self.client.secrets.identity.list_entities(mount_point=self.TEST_MOUNT_POINT)
             logging.debug('list_entities_response in tearDown: %s' % list_entities_response)
             entity_ids = list_entities_response['data']['keys']
         except exceptions.InvalidPath:
@@ -49,14 +50,14 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_ids = []
         for entity_id in entity_ids:
             logging.debug('Deleting entity ID: %s' % entity_id)
-            self.client.secrets.identity.delete_entity(
+            await self.client.secrets.identity.delete_entity(
                 entity_id=entity_id,
                 mount_point=self.TEST_MOUNT_POINT,
             )
 
-    def tear_down_entity_aliases(self):
+    async def tear_down_entity_aliases(self):
         try:
-            list_entity_aliases_response = self.client.secrets.identity.list_entity_aliases(mount_point=self.TEST_MOUNT_POINT)
+            list_entity_aliases_response = await self.client.secrets.identity.list_entity_aliases(mount_point=self.TEST_MOUNT_POINT)
             logging.debug('list_entity_aliases_response in tearDown: %s' % list_entity_aliases_response)
             alias_ids = list_entity_aliases_response['keys']
         except exceptions.InvalidPath:
@@ -64,14 +65,14 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             alias_ids = []
         for alias_id in alias_ids:
             logging.debug('Deleting alias ID: %s' % alias_id)
-            self.client.secrets.identity.delete_entity_alias(
+            await self.client.secrets.identity.delete_entity_alias(
                 alias_id=alias_id,
                 mount_point=self.TEST_MOUNT_POINT,
             )
 
-    def tear_down_groups(self):
+    async def tear_down_groups(self):
         try:
-            list_group_response = self.client.secrets.identity.list_groups(mount_point=self.TEST_MOUNT_POINT)
+            list_group_response = await self.client.secrets.identity.list_groups(mount_point=self.TEST_MOUNT_POINT)
             logging.debug('list_group_response in tearDown: %s' % list_group_response)
             group_ids = list_group_response['data']['keys']
         except exceptions.InvalidPath:
@@ -79,7 +80,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             group_ids = []
         for group_id in group_ids:
             logging.debug('Deleting group ID: %s' % group_id)
-            self.client.secrets.identity.delete_group(
+            await self.client.secrets.identity.delete_group(
                 group_id=group_id,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -103,10 +104,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=True,
         ),
     ])
-    def test_create_or_update_entity(self, label, metadata=None, create_first=False, raises=None, exception_message=''):
+    async def test_create_or_update_entity(self, label, metadata=None, create_first=False, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     entity_id=entity_id,
                     metadata=metadata,
@@ -116,7 +117,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_entity(
+                await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     metadata=metadata,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -126,7 +127,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_response = self.client.secrets.identity.create_or_update_entity(
+            create_or_update_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     entity_id=entity_id,
                     metadata=metadata,
@@ -145,7 +146,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                     )
             else:
                 self.assertEqual(
-                    first=create_or_update_response.status_code,
+                    first=create_or_update_response.status,
                     second=204,
                 )
 
@@ -169,10 +170,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_create_or_update_entity_by_name(self, label, metadata=None, create_first=False, raises=None, exception_message=''):
+    async def test_create_or_update_entity_by_name(self, label, metadata=None, create_first=False, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     entity_id=entity_id,
                     metadata=metadata,
@@ -182,7 +183,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_entity_by_name(
+                await self.client.secrets.identity.create_or_update_entity_by_name(
                     name=self.TEST_ENTITY_NAME,
                     metadata=metadata,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -192,7 +193,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_response = self.client.secrets.identity.create_or_update_entity_by_name(
+            create_or_update_response = await self.client.secrets.identity.create_or_update_entity_by_name(
                     name=self.TEST_ENTITY_NAME,
                     metadata=metadata,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -210,7 +211,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                     )
             else:
                 self.assertEqual(
-                    first=create_or_update_response.status_code,
+                    first=create_or_update_response.status,
                     second=204,
                 )
 
@@ -224,10 +225,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath
         ),
     ])
-    def test_read_entity_by_id(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_read_entity_by_id(self, label, create_first=True, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -235,7 +236,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.read_entity(
+                await self.client.secrets.identity.read_entity(
                     entity_id=entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -244,7 +245,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_entity_by_id_response = self.client.secrets.identity.read_entity(
+            read_entity_by_id_response = await self.client.secrets.identity.read_entity(
                 entity_id=entity_id,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -265,10 +266,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_read_entity_by_name(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_read_entity_by_name(self, label, create_first=True, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -276,7 +277,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.read_entity_by_name(
+                await self.client.secrets.identity.read_entity_by_name(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -285,7 +286,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_entity_by_name_response = self.client.secrets.identity.read_entity_by_name(
+            read_entity_by_name_response = await self.client.secrets.identity.read_entity_by_name(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -310,8 +311,8 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             exception_message='unsupported metadata argument provided',
         ),
     ])
-    def test_update_entity(self, label, metadata=None, raises=None, exception_message=''):
-        create_first_response = self.client.secrets.identity.create_or_update_entity(
+    async def test_update_entity(self, label, metadata=None, raises=None, exception_message=''):
+        create_first_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -319,7 +320,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.update_entity(
+                await self.client.secrets.identity.update_entity(
                     entity_id=entity_id,
                     metadata=metadata,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -329,7 +330,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            update_entity_response = self.client.secrets.identity.update_entity(
+            update_entity_response = await self.client.secrets.identity.update_entity(
                     entity_id=entity_id,
                     metadata=metadata,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -342,7 +343,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             else:
                 self.assertEqual(
-                    first=update_entity_response.status_code,
+                    first=update_entity_response.status,
                     second=204,
                 )
 
@@ -355,10 +356,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=False,
         ),
     ])
-    def test_delete_entity_by_id(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_delete_entity_by_id(self, label, create_first=True, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -366,7 +367,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.delete_entity(
+                await self.client.secrets.identity.delete_entity(
                     entity_id=entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -375,13 +376,13 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_entity_response = self.client.secrets.identity.delete_entity(
+            delete_entity_response = await self.client.secrets.identity.delete_entity(
                     entity_id=entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('update_entity_response: %s' % delete_entity_response)
             self.assertEqual(
-                first=delete_entity_response.status_code,
+                first=delete_entity_response.status,
                 second=204,
             )
 
@@ -395,16 +396,16 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_delete_entity_by_name(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_delete_entity_by_name(self, label, create_first=True, raises=None, exception_message=''):
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_first_response: %s' % create_first_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.delete_entity_by_name(
+                await self.client.secrets.identity.delete_entity_by_name(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -413,13 +414,13 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_entity_response = self.client.secrets.identity.delete_entity_by_name(
+            delete_entity_response = await self.client.secrets.identity.delete_entity_by_name(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('update_entity_response: %s' % delete_entity_response)
             self.assertEqual(
-                first=delete_entity_response.status_code,
+                first=delete_entity_response.status,
                 second=204,
             )
 
@@ -438,8 +439,8 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             exception_message='"method" parameter provided invalid value',
         ),
     ])
-    def test_list_entities_by_id(self, label, method='LIST', raises=None, exception_message=''):
-        create_response = self.client.secrets.identity.create_or_update_entity(
+    async def test_list_entities_by_id(self, label, method='LIST', raises=None, exception_message=''):
+        create_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -447,7 +448,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         entity_id = create_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.list_entities(
+                await self.client.secrets.identity.list_entities(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -456,7 +457,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_entities_response = self.client.secrets.identity.list_entities(
+            list_entities_response = await self.client.secrets.identity.list_entities(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -482,15 +483,15 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_list_entities_by_name(self, label, method='LIST', raises=None, exception_message=''):
-        create_response = self.client.secrets.identity.create_or_update_entity(
+    async def test_list_entities_by_name(self, label, method='LIST', raises=None, exception_message=''):
+        create_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_response: %s' % create_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.list_entities_by_name(
+                await self.client.secrets.identity.list_entities_by_name(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -499,7 +500,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_entities_response = self.client.secrets.identity.list_entities_by_name(
+            list_entities_response = await self.client.secrets.identity.list_entities_by_name(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -517,13 +518,13 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             'merge failure',
         ),
     ])
-    def test_merge_entities(self, label, raises=None, exception_message=''):
-        create_response = self.client.secrets.identity.create_or_update_entity(
+    async def test_merge_entities(self, label, raises=None, exception_message=''):
+        create_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_response: %s' % create_response)
-        create_response2 = self.client.secrets.identity.create_or_update_entity(
+        create_response2 = await self.client.secrets.identity.create_or_update_entity(
                 name='%s2' % self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -532,7 +533,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         from_entity_ids = [create_response2['data']['id']]
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.merge_entities(
+                await self.client.secrets.identity.merge_entities(
                     from_entity_ids=from_entity_ids,
                     to_entity_id=to_entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -542,14 +543,14 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            merge_entities_response = self.client.secrets.identity.merge_entities(
+            merge_entities_response = await self.client.secrets.identity.merge_entities(
                     from_entity_ids=from_entity_ids,
                     to_entity_id=to_entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('merge_entities_response: %s' % merge_entities_response)
             self.assertEqual(
-                first=merge_entities_response.status_code,
+                first=merge_entities_response.status,
                 second=204,
             )
 
@@ -562,10 +563,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=True,
         ),
     ])
-    def test_create_or_update_entity_alias(self, label, create_first=False, raises=None, exception_message=''):
+    async def test_create_or_update_entity_alias(self, label, create_first=False, raises=None, exception_message=''):
         entity_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     entity_id=entity_id,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -574,7 +575,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             entity_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_entity_alias(
+                await self.client.secrets.identity.create_or_update_entity_alias(
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
                     mount_accessor=self.test_approle_accessor,
@@ -585,7 +586,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_response = self.client.secrets.identity.create_or_update_entity_alias(
+            create_or_update_response = await self.client.secrets.identity.create_or_update_entity_alias(
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
                     mount_accessor=self.test_approle_accessor,
@@ -613,16 +614,16 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_entity_alias_by_id(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_read_entity_alias_by_id(self, label, create_first=True, raises=None, exception_message=''):
         alias_id = None
         if create_first:
-            create_entity_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_entity_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_entity_first_response: %s' % create_entity_first_response)
             entity_id = create_entity_first_response['data']['id']
-            create_entity_alias_first_response = self.client.secrets.identity.create_or_update_entity_alias(
+            create_entity_alias_first_response = await self.client.secrets.identity.create_or_update_entity_alias(
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
                     mount_accessor=self.test_approle_accessor,
@@ -632,7 +633,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             alias_id = create_entity_alias_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.read_entity_alias(
+                await self.client.secrets.identity.read_entity_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -641,7 +642,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_entity_alias_response = self.client.secrets.identity.read_entity_alias(
+            read_entity_alias_response = await self.client.secrets.identity.read_entity_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -668,16 +669,16 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             exception_message='invalid mount accessor',
         ),
     ])
-    def test_update_entity_alias_by_id(self, label, mount_accessor=None, raises=None, exception_message=''):
+    async def test_update_entity_alias_by_id(self, label, mount_accessor=None, raises=None, exception_message=''):
         if mount_accessor is None:
             mount_accessor = self.test_approle_accessor
-        create_entity_first_response = self.client.secrets.identity.create_or_update_entity(
+        create_entity_first_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_entity_first_response: %s' % create_entity_first_response)
         entity_id = create_entity_first_response['data']['id']
-        create_entity_alias_first_response = self.client.secrets.identity.create_or_update_entity_alias(
+        create_entity_alias_first_response = await self.client.secrets.identity.create_or_update_entity_alias(
                 name=self.TEST_ALIAS_NAME,
                 canonical_id=entity_id,
                 mount_accessor=self.test_approle_accessor,
@@ -687,7 +688,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         alias_id = create_entity_alias_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.update_entity_alias(
+                await self.client.secrets.identity.update_entity_alias(
                     alias_id=alias_id,
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
@@ -699,7 +700,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            update_entity_response = self.client.secrets.identity.update_entity_alias(
+            update_entity_response = await self.client.secrets.identity.update_entity_alias(
                     alias_id=alias_id,
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
@@ -718,7 +719,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             else:
                 self.assertEqual(
-                    first=update_entity_response.status_code,
+                    first=update_entity_response.status,
                     second=204,
                 )
 
@@ -737,14 +738,14 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             exception_message='"method" parameter provided invalid value',
         ),
     ])
-    def test_list_entity_aliases_by_id(self, label, method='LIST', raises=None, exception_message=''):
-        create_response = self.client.secrets.identity.create_or_update_entity(
+    async def test_list_entity_aliases_by_id(self, label, method='LIST', raises=None, exception_message=''):
+        create_response = await self.client.secrets.identity.create_or_update_entity(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_response: %s' % create_response)
         entity_id = create_response['data']['id']
-        create_entity_alias_first_response = self.client.secrets.identity.create_or_update_entity_alias(
+        create_entity_alias_first_response = await self.client.secrets.identity.create_or_update_entity_alias(
                 name=self.TEST_ALIAS_NAME,
                 canonical_id=entity_id,
                 mount_accessor=self.test_approle_accessor,
@@ -753,7 +754,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         alias_id = create_entity_alias_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.list_entity_aliases(
+                await self.client.secrets.identity.list_entity_aliases(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -762,7 +763,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_entities_response = self.client.secrets.identity.list_entity_aliases(
+            list_entities_response = await self.client.secrets.identity.list_entity_aliases(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -781,16 +782,16 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=False,
         ),
     ])
-    def test_delete_entity_alias_by_id(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_delete_entity_alias_by_id(self, label, create_first=True, raises=None, exception_message=''):
         alias_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_entity(
+            create_first_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_first_response: %s' % create_first_response)
             entity_id = create_first_response['data']['id']
-            create_entity_alias_first_response = self.client.secrets.identity.create_or_update_entity_alias(
+            create_entity_alias_first_response = await self.client.secrets.identity.create_or_update_entity_alias(
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
                     mount_accessor=self.test_approle_accessor,
@@ -799,7 +800,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             alias_id = create_entity_alias_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.delete_entity_alias(
+                await self.client.secrets.identity.delete_entity_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -808,13 +809,13 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            delete_entity_response = self.client.secrets.identity.delete_entity_alias(
+            delete_entity_response = await self.client.secrets.identity.delete_entity_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('update_entity_response: %s' % delete_entity_response)
             self.assertEqual(
-                first=delete_entity_response.status_code,
+                first=delete_entity_response.status,
                 second=204,
             )
 
@@ -848,26 +849,26 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=True,
         ),
     ])
-    def test_create_or_update_group(self, label, metadata=None, group_type='internal', create_first=False,
+    async def test_create_or_update_group(self, label, metadata=None, group_type='internal', create_first=False,
                                     add_members=True, raises=None, exception_message=''):
         group_id = None
         member_entity_ids = None
         member_group_ids = None
         if add_members:
-            create_entity_response = self.client.secrets.identity.create_or_update_entity(
+            create_entity_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_entity_response: %s' % create_entity_response)
             member_entity_ids = [create_entity_response['data']['id']]
-            create_member_group = self.client.secrets.identity.create_or_update_group(
+            create_member_group = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_MEMBER_GROUP_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_member_group: %s' % create_member_group)
             member_group_ids = [create_member_group['data']['id']]
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_group(
+            create_first_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_type=group_type,
                     metadata=metadata,
@@ -877,7 +878,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             group_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_group(
+                await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_id=group_id,
                     group_type=group_type,
@@ -891,7 +892,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_response = self.client.secrets.identity.create_or_update_group(
+            create_or_update_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_id=group_id,
                     group_type=group_type,
@@ -911,7 +912,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                         first=group_id,
                         second=create_or_update_response['data']['id'],
                     )
-                read_group_response = self.client.secrets.identity.read_group(
+                read_group_response = await self.client.secrets.identity.read_group(
                     group_id=create_or_update_response['data']['id'],
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -927,7 +928,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             else:
                 self.assertEqual(
-                    first=create_or_update_response.status_code,
+                    first=create_or_update_response.status,
                     second=204,
                 )
 
@@ -962,26 +963,26 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=True,
         ),
     ])
-    def test_update_group_by_id(self, label, metadata=None, group_type='internal', create_first=True,
+    async def test_update_group_by_id(self, label, metadata=None, group_type='internal', create_first=True,
                                 update_members=True, raises=None, exception_message=''):
         group_id = None
         member_entity_ids = None
         member_group_ids = None
         if update_members:
-            create_entity_response = self.client.secrets.identity.create_or_update_entity(
+            create_entity_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_entity_response: %s' % create_entity_response)
             member_entity_ids = [create_entity_response['data']['id']]
-            create_member_group = self.client.secrets.identity.create_or_update_group(
+            create_member_group = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_MEMBER_GROUP_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_member_group: %s' % create_member_group)
             member_group_ids = [create_member_group['data']['id']]
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_group(
+            create_first_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_type='internal',
                     metadata=None,
@@ -991,7 +992,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             group_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.update_group(
+                await self.client.secrets.identity.update_group(
                     name=self.TEST_GROUP_NAME,
                     group_id=group_id,
                     group_type=group_type,
@@ -1005,7 +1006,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            update_response = self.client.secrets.identity.update_group(
+            update_response = await self.client.secrets.identity.update_group(
                     name=self.TEST_GROUP_NAME,
                     group_id=group_id,
                     group_type=group_type,
@@ -1023,10 +1024,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             else:
                 self.assertEqual(
-                    first=update_response.status_code,
+                    first=update_response.status,
                     second=204,
                 )
-            read_group_response = self.client.secrets.identity.read_group(
+            read_group_response = await self.client.secrets.identity.read_group(
                 group_id=group_id,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -1057,15 +1058,15 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_list_groups_by_name(self, label, method='LIST', raises=None, exception_message=''):
-        create_response = self.client.secrets.identity.create_or_update_group(
+    async def test_list_groups_by_name(self, label, method='LIST', raises=None, exception_message=''):
+        create_response = await self.client.secrets.identity.create_or_update_group(
                 name=self.TEST_GROUP_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_response: %s' % create_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.list_groups_by_name(
+                await self.client.secrets.identity.list_groups_by_name(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1074,7 +1075,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_groups_response = self.client.secrets.identity.list_groups_by_name(
+            list_groups_response = await self.client.secrets.identity.list_groups_by_name(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1116,9 +1117,9 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_create_or_update_group_by_name(self, label, metadata=None, group_type='internal', create_first=True, raises=None, exception_message=''):
+    async def test_create_or_update_group_by_name(self, label, metadata=None, group_type='internal', create_first=True, raises=None, exception_message=''):
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_group(
+            create_first_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_type='internal',
                     metadata=None,
@@ -1127,7 +1128,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             logging.debug('create_first_response: %s' % create_first_response)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_group_by_name(
+                await self.client.secrets.identity.create_or_update_group_by_name(
                     name=self.TEST_GROUP_NAME,
                     group_type=group_type,
                     metadata=metadata,
@@ -1138,7 +1139,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            update_response = self.client.secrets.identity.create_or_update_group_by_name(
+            update_response = await self.client.secrets.identity.create_or_update_group_by_name(
                     name=self.TEST_GROUP_NAME,
                     group_type=group_type,
                     metadata=metadata,
@@ -1146,7 +1147,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             logging.debug('update_response: %s' % update_response)
             self.assertEqual(
-                first=update_response.status_code,
+                first=update_response.status,
                 second=204,
             )
 
@@ -1161,10 +1162,10 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         ),
     ])
     @skipIf(utils.vault_version_lt('0.11.2'), '"by name" operations added in Vault v0.11.2')
-    def test_read_group_by_name(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_read_group_by_name(self, label, create_first=True, raises=None, exception_message=''):
         group_id = None
         if create_first:
-            create_first_response = self.client.secrets.identity.create_or_update_group(
+            create_first_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_type='internal',
                     metadata=None,
@@ -1174,7 +1175,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             group_id = create_first_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.read_entity_by_name(
+                await self.client.secrets.identity.read_entity_by_name(
                     name=self.TEST_GROUP_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1183,7 +1184,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_group_response = self.client.secrets.identity.read_group_by_name(
+            read_group_response = await self.client.secrets.identity.read_group_by_name(
                 name=self.TEST_GROUP_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
@@ -1202,15 +1203,15 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=True,
         ),
     ])
-    def test_create_or_update_group_alias(self, label, create_first=False, raises=None, exception_message=''):
+    async def test_create_or_update_group_alias(self, label, create_first=False, raises=None, exception_message=''):
         alias_id = None
-        create_first_response = self.client.secrets.identity.create_or_update_group(
+        create_first_response = await self.client.secrets.identity.create_or_update_group(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_first_response: %s' % create_first_response)
         if create_first:
-            create_alias_response = self.client.secrets.identity.create_or_update_group_alias(
+            create_alias_response = await self.client.secrets.identity.create_or_update_group_alias(
                     name=self.TEST_GROUP_NAME,
                     mount_accessor=self.test_approle_accessor,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -1219,7 +1220,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             alias_id = create_alias_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.create_or_update_group_alias(
+                await self.client.secrets.identity.create_or_update_group_alias(
                     name=self.TEST_ENTITY_NAME,
                     alias_id=alias_id,
                     mount_accessor=self.test_approle_accessor,
@@ -1230,7 +1231,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            create_or_update_response = self.client.secrets.identity.create_or_update_group_alias(
+            create_or_update_response = await self.client.secrets.identity.create_or_update_group_alias(
                     name=self.TEST_GROUP_NAME,
                     alias_id=alias_id,
                     mount_accessor=self.test_approle_accessor,
@@ -1249,7 +1250,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 )
             # else:
             #     self.assertEqual(
-            #         first=create_or_update_response.status_code,
+            #         first=create_or_update_response.status,
             #         second=204,
             #     )
 
@@ -1263,15 +1264,15 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             raises=exceptions.InvalidPath,
         ),
     ])
-    def test_read_group_alias(self, label, create_first=True, raises=None, exception_message=''):
+    async def test_read_group_alias(self, label, create_first=True, raises=None, exception_message=''):
         alias_id = None
-        create_first_response = self.client.secrets.identity.create_or_update_group(
+        create_first_response = await self.client.secrets.identity.create_or_update_group(
                 name=self.TEST_ENTITY_NAME,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_first_response: %s' % create_first_response)
         if create_first:
-            create_alias_response = self.client.secrets.identity.create_or_update_group_alias(
+            create_alias_response = await self.client.secrets.identity.create_or_update_group_alias(
                     name=self.TEST_GROUP_NAME,
                     mount_accessor=self.test_approle_accessor,
                     mount_point=self.TEST_MOUNT_POINT,
@@ -1280,7 +1281,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             alias_id = create_alias_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.read_group_alias(
+                await self.client.secrets.identity.read_group_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1289,7 +1290,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            read_group_alias_response = self.client.secrets.identity.read_group_alias(
+            read_group_alias_response = await self.client.secrets.identity.read_group_alias(
                     alias_id=alias_id,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1320,15 +1321,15 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             exception_message='"method" parameter provided invalid value',
         ),
     ])
-    def test_list_group_aliases(self, label, method='LIST', raises=None, exception_message=''):
-        create_group_response = self.client.secrets.identity.create_or_update_group(
+    async def test_list_group_aliases(self, label, method='LIST', raises=None, exception_message=''):
+        create_group_response = await self.client.secrets.identity.create_or_update_group(
                 name=self.TEST_GROUP_ALIAS_NAME,
                 group_type='internal',
                 metadata=None,
                 mount_point=self.TEST_MOUNT_POINT,
             )
         logging.debug('create_group_response: %s' % create_group_response)
-        create_alias_response = self.client.secrets.identity.create_or_update_group_alias(
+        create_alias_response = await self.client.secrets.identity.create_or_update_group_alias(
                 name=self.TEST_GROUP_NAME,
                 mount_accessor=self.test_approle_accessor,
                 mount_point=self.TEST_MOUNT_POINT,
@@ -1337,7 +1338,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         alias_id = create_alias_response['data']['id']
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.list_group_aliases(
+                await self.client.secrets.identity.list_group_aliases(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1346,7 +1347,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            list_groups_response = self.client.secrets.identity.list_group_aliases(
+            list_groups_response = await self.client.secrets.identity.list_group_aliases(
                     method=method,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
@@ -1371,16 +1372,16 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=False,
         ),
     ])
-    def test_lookup_entity(self, label, criteria, create_first=True, raises=None, exception_message=''):
+    async def test_lookup_entity(self, label, criteria, create_first=True, raises=None, exception_message=''):
         lookup_params = {}
         if create_first:
-            create_entity_response = self.client.secrets.identity.create_or_update_entity(
+            create_entity_response = await self.client.secrets.identity.create_or_update_entity(
                     name=self.TEST_ENTITY_NAME,
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_entity_response: %s' % create_entity_response)
             entity_id = create_entity_response['data']['id']
-            create_alias_response = self.client.secrets.identity.create_or_update_entity_alias(
+            create_alias_response = await self.client.secrets.identity.create_or_update_entity_alias(
                     name=self.TEST_ALIAS_NAME,
                     canonical_id=entity_id,
                     mount_accessor=self.test_approle_accessor,
@@ -1398,7 +1399,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         logging.debug('lookup_params: %s' % lookup_params)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.lookup_entity(
+                await self.client.secrets.identity.lookup_entity(
                     mount_point=self.TEST_MOUNT_POINT,
                     **lookup_params
                 )
@@ -1407,7 +1408,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            lookup_entity_response = self.client.secrets.identity.lookup_entity(
+            lookup_entity_response = await self.client.secrets.identity.lookup_entity(
                     mount_point=self.TEST_MOUNT_POINT,
                     **lookup_params
                 )
@@ -1449,17 +1450,17 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
             create_first=False,
         ),
     ])
-    def test_lookup_group(self, label, criteria, create_first=True, raises=None, exception_message=''):
+    async def test_lookup_group(self, label, criteria, create_first=True, raises=None, exception_message=''):
         lookup_params = {}
         if create_first:
-            create_group_response = self.client.secrets.identity.create_or_update_group(
+            create_group_response = await self.client.secrets.identity.create_or_update_group(
                     name=self.TEST_GROUP_NAME,
                     group_type='external',
                     mount_point=self.TEST_MOUNT_POINT,
                 )
             logging.debug('create_group_response: %s' % create_group_response)
             group_id = create_group_response['data']['id']
-            create_alias_response = self.client.secrets.identity.create_or_update_group_alias(
+            create_alias_response = await self.client.secrets.identity.create_or_update_group_alias(
                         name=self.TEST_GROUP_ALIAS_NAME,
                         canonical_id=group_id,
                         mount_accessor=self.test_approle_accessor,
@@ -1482,7 +1483,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
         logging.debug('lookup_params: %s' % lookup_params)
         if raises:
             with self.assertRaises(raises) as cm:
-                self.client.secrets.identity.lookup_group(
+                await self.client.secrets.identity.lookup_group(
                     mount_point=self.TEST_MOUNT_POINT,
                     **lookup_params
                 )
@@ -1491,7 +1492,7 @@ class TestIdentity(HvacIntegrationTestCase, TestCase):
                 container=str(cm.exception),
             )
         else:
-            lookup_group_response = self.client.secrets.identity.lookup_group(
+            lookup_group_response = await self.client.secrets.identity.lookup_group(
                     mount_point=self.TEST_MOUNT_POINT,
                     **lookup_params
                 )

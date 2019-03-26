@@ -67,7 +67,7 @@ class Aws(VaultApiBase):
             json=params,
         )
 
-    def rotate_root_iam_credentials(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def rotate_root_iam_credentials(self, mount_point=DEFAULT_MOUNT_POINT):
         """Rotate static root IAM credentials.
 
         When you have configured Vault with static credentials, you can use this endpoint to have Vault rotate the
@@ -85,10 +85,10 @@ class Aws(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/config/rotate-root'.format(mount_point=mount_point)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def configure_lease(self, lease, lease_max, mount_point=DEFAULT_MOUNT_POINT):
         """Configure lease settings for the AWS secrets engine.
@@ -119,7 +119,7 @@ class Aws(VaultApiBase):
             json=params,
         )
 
-    def read_lease_config(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_lease_config(self, mount_point=DEFAULT_MOUNT_POINT):
         """Read the current lease settings for the AWS secrets engine.
 
         Supported methods:
@@ -131,10 +131,10 @@ class Aws(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/config/lease'.format(mount_point=mount_point)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def create_or_update_role(self, name, credential_type, policy_document=None, default_sts_ttl=None, max_sts_ttl=None,
                               role_arns=None, policy_arns=None, legacy_params=False, mount_point=DEFAULT_MOUNT_POINT):
@@ -212,7 +212,7 @@ class Aws(VaultApiBase):
             json=params,
         )
 
-    def read_role(self, name, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_role(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Query an existing role by the given name.
 
         If the role does not exist, a 404 is returned.
@@ -231,12 +231,12 @@ class Aws(VaultApiBase):
             mount_point=mount_point,
             name=name,
         )
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def list_roles(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def list_roles(self, mount_point=DEFAULT_MOUNT_POINT):
         """List all existing roles in the secrets engine.
 
         Supported methods:
@@ -248,10 +248,10 @@ class Aws(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/roles'.format(mount_point=mount_point)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def delete_role(self, name, mount_point=DEFAULT_MOUNT_POINT):
         """Delete an existing role by the given name.
@@ -277,7 +277,7 @@ class Aws(VaultApiBase):
             url=api_path,
         )
 
-    def generate_credentials(self, name, role_arn=None, ttl="3600s", endpoint='creds', mount_point=DEFAULT_MOUNT_POINT):
+    async def generate_credentials(self, name, role_arn=None, ttl="3600s", endpoint='creds', mount_point=DEFAULT_MOUNT_POINT):
         """Generates credential based on the named role.
 
         This role must be created before queried.
@@ -325,8 +325,8 @@ class Aws(VaultApiBase):
             endpoint=endpoint,
             name=name,
         )
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()

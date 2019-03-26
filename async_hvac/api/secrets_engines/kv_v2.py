@@ -42,7 +42,7 @@ class KvV2(VaultApiBase):
             json=params,
         )
 
-    def read_configuration(self, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_configuration(self, mount_point=DEFAULT_MOUNT_POINT):
         """Read the KV Version 2 configuration.
 
         Supported methods:
@@ -57,10 +57,10 @@ class KvV2(VaultApiBase):
         api_path = '/v1/{mount_point}/config'.format(
             mount_point=mount_point,
         )
-        response = self._adapter.get(url=api_path)
-        return response.json()
+        response = await self._adapter.get(url=api_path)
+        return await response.json()
 
-    def read_secret_version(self, path, version=None, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_secret_version(self, path, version=None, mount_point=DEFAULT_MOUNT_POINT):
         """Retrieve the secret at the specified location.
 
         Supported methods:
@@ -80,13 +80,13 @@ class KvV2(VaultApiBase):
         if version is not None:
             params['version'] = version
         api_path = '/v1/{mount_point}/data/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
             params=params,
         )
-        return response.json()
+        return await response.json()
 
-    def create_or_update_secret(self, path, secret, cas=None, mount_point=DEFAULT_MOUNT_POINT):
+    async def create_or_update_secret(self, path, secret, cas=None, mount_point=DEFAULT_MOUNT_POINT):
         """Create a new version of a secret at the specified location.
 
         If the value does not yet exist, the calling token must have an ACL policy granting the create capability. If
@@ -117,11 +117,11 @@ class KvV2(VaultApiBase):
             params['options']['cas'] = cas
 
         api_path = '/v1/{mount_point}/data/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.post(
+        response = await self._adapter.post(
             url=api_path,
             json=params,
         )
-        return response.json()
+        return await response.json()
 
     def patch(self, path, secret, mount_point=DEFAULT_MOUNT_POINT):
         """Set or update data in the KV store without overwriting.
@@ -278,7 +278,7 @@ class KvV2(VaultApiBase):
             json=params,
         )
 
-    def list_secrets(self, path, mount_point=DEFAULT_MOUNT_POINT):
+    async def list_secrets(self, path, mount_point=DEFAULT_MOUNT_POINT):
         """Return a list of key names at the specified location.
 
         Folders are suffixed with /. The input must be a folder; list on a file will not return a value. Note that no
@@ -297,12 +297,12 @@ class KvV2(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/metadata/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.list(
+        response = await self._adapter.list(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
-    def read_secret_metadata(self, path, mount_point=DEFAULT_MOUNT_POINT):
+    async def read_secret_metadata(self, path, mount_point=DEFAULT_MOUNT_POINT):
         """Retrieve the metadata and versions for the secret at the specified path.
 
         Supported methods:
@@ -317,10 +317,10 @@ class KvV2(VaultApiBase):
         :rtype: dict
         """
         api_path = '/v1/{mount_point}/metadata/{path}'.format(mount_point=mount_point, path=path)
-        response = self._adapter.get(
+        response = await self._adapter.get(
             url=api_path,
         )
-        return response.json()
+        return await response.json()
 
     def update_metadata(self, path, max_versions=None, cas_required=None, mount_point=DEFAULT_MOUNT_POINT):
         """Updates the max_versions of cas_required setting on an existing path.
