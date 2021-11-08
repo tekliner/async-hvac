@@ -279,9 +279,10 @@ Feel free to open pull requests with additional features or improvements!
 
 ## Publishing
 
-This fork uses private Improvado PYPI server, so you need credentials to publish new versions.
-To publish a new version, use the shell script:
+This fork uses a private Improvado PYPI server, so you need credentials to publish new versions.
+
+To publish a new version, bump the version in the `version` file and use the following command:
 
 ```sh
-./publish.sh
+docker-compose run --rm publish
 ```

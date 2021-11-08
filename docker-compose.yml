@@ -1,0 +1,10 @@
+version: "3"
+services:
+  publish:
+    build: .
+    tty: true
+    image: improvado_async_hvac
+    volumes:
+      - .:/usr/src/app/
+      - .pypirc:/root/.pypirc
+    command: ./publish.sh
