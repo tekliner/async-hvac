@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2 (November 8, 2021)
+
+Allow to use higher aiohttp versions
+
 ## 0.6.1 (July 12th, 2018)
 
 Merge changes of version 0.6.1 of hvac (Python 2/3 client for HashiCorp Vault), see https://github.com/ianunruh/hvac 
