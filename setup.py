@@ -14,7 +14,7 @@ if not os.path.exists(vsn_path):
         sys.exit(1)
 
 setup(
-    name='async-hvac',
+    name='improvado-async-hvac',
     version=open(vsn_path, 'r').read(),
     description='HashiCorp Vault API client',
     long_description='HashiCorp Vault API python 3.6+ client using asyncio.',

@@ -1,20 +1,20 @@
-# ASYNC-HVAC
+# ASYNC-HVAC forked by Improvado
 
 [HashiCorp](https://hashicorp.com/) [Vault](https://www.vaultproject.io) API asyncio client for Python 3
 
+This version is forked by Improvado
 
-[![Travis CI](https://travis-ci.com/Aloomaio/async-hvac.svg?branch=master)](https://travis-ci.com/Aloomaio/async-hvac) [![Latest Version](https://img.shields.io/pypi/v/async-hvac.svg)](https://pypi.python.org/pypi/async-hvac/)
 
 ## Getting started
 
 ### Installation
 
 ```bash
-pip install async-hvac
+pip install improvado-async-hvac
 ```
 or
 ```bash
-pip install async-hvac[parser]
+pip install improvado-async-hvac[parser]
 ```
 if you would like to be able to return parsed HCL data as a Python dict for methods that support it.
 
@@ -275,3 +275,14 @@ the latest `vault` binary is available in your `PATH`.
 ## Contributing
 
 Feel free to open pull requests with additional features or improvements!
+
+
+## Publishing
+
+This fork uses a private Improvado PYPI server, so you need credentials to publish new versions.
+
+To publish a new version, bump the version in the `version` file and use the following command:
+
+```sh
+docker-compose run --rm publish
+```
