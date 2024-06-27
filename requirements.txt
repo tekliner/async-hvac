@@ -1,3 +1,4 @@
 aiohttp>=3.3.1
 pyhcl==0.3.10
 twine==3.5.0
+s3pypi==2.0.1

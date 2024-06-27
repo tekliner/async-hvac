@@ -281,8 +281,10 @@ Feel free to open pull requests with additional features or improvements!
 
 This fork uses a private Improvado PYPI server, so you need credentials to publish new versions.
 
+First of all, you should have developers-admin AWS role.
+
 To publish a new version, bump the version in the `version` file and use the following command:
 
 ```sh
-docker-compose run --rm publish
+aws-vault exec global-management -- docker-compose run --rm publish
 ```
