@@ -278,10 +278,8 @@ Feel free to open pull requests with additional features or improvements!
 
 
 ## Publishing
-
-This fork uses a private Improvado PYPI server, so you need credentials to publish new versions.
-
-First of all, you should have developers-admin AWS role.
+Developers-admin or DevOps AWS role is required to publish production version of the package.
+Usual developers can publish only dev build.
 
 To publish a new version, bump the version in the `version` file and use the following command:
 
