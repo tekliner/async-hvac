@@ -8,4 +8,4 @@ set -euo pipefail
 
 python ./setup.py sdist bdist_wheel
 
-twine upload -r improvado dist/* --verbose
+s3pypi upload dist/* --bucket im-s3-pypi
